@@ -1,0 +1,31 @@
+{
+  "analysis": {
+    "analyzer": {
+      "serbian_custom": {
+        "type": "custom",
+        "tokenizer": "icu_tokenizer",
+        "filter": [
+          "serbian_cyrillic_to_latinic",
+          "lowercase",
+          "icu_folding",
+          "serbian_stop",
+          "serbian_stemmer"
+        ]
+      }
+    },
+    "filter": {
+      "serbian_cyrillic_to_latinic": {
+        "type": "icu_transform",
+        "id": "Any-Latin; NFD; [:Nonspacing Mark:] Remove; NFC"
+      },
+      "serbian_stop": {
+        "type": "stop",
+        "stopwords": "_serbian_"
+      },
+      "serbian_stemmer": {
+        "type": "stemmer",
+        "language": "serbian"
+      }
+    }
+  }
+}
