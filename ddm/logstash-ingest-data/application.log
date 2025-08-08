@@ -2137,3 +2137,6 @@ Warnings:
 2025-08-08T15:52:34.538+02:00  INFO 1904 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-5] o.n.l.a.o.e.DefaultOpExecutioner         : Cores: [8]; Memory: [1.9GB];
 2025-08-08T15:52:34.538+02:00  INFO 1904 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-5] o.n.l.a.o.e.DefaultOpExecutioner         : Blas vendor: [OPENBLAS]
 2025-08-08T15:52:40.870+02:00  INFO 1904 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-5] c.d.ddm_backend.service.IndexingService  : STATISTIC-LOG Indexed file Untitled document (4) with employee_name:Nikola Milić affected_organization:Univerzitet u Kragujevcu address:Svetozara Markovića 69, Kragujevac
+2025-08-08T17:56:49.628+02:00  INFO 1904 --- [ddm-backend] [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-08-08T17:56:50.818+02:00  INFO 1904 --- [ddm-backend] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2025-08-08T17:56:51.272+02:00  INFO 1904 --- [ddm-backend] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.

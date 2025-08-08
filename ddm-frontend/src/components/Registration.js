@@ -61,7 +61,6 @@ return (
 
         <form onSubmit={handleSubmit} style={{ width: '100%' }}>
           <Grid container spacing={2}>
-            {/* SVA polja moraju imati xs={12} da zauzmu ceo red */}
               <TextField
                 label="First Name"
                 name="firstName"
