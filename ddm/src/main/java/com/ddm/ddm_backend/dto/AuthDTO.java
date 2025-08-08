@@ -3,7 +3,7 @@
 
 package com.ddm.ddm_backend.dto;
 
-public class AuthDto {
+public class AuthDTO {
     public record LoginRequest(String username, String password) {
     }
 

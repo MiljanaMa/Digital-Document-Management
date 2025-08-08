@@ -1,14 +1,17 @@
 package com.ddm.ddm_backend.dto;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class GeoLocationResponseDTO {
-    private Double lat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.*;
 
-    private Double lon;
+@Data
+public class GeoLocationResponseDTO {
+    @JsonProperty("place_id")
+    private String placeId;
+    private String lat;
+    private String lon;
+    @JsonProperty("display_name")
+    private String displayName;
+    @JsonProperty("class")
+    private String clazz; // can't name it "class" in Java
+    private String type;
+    private Double importance;
 }

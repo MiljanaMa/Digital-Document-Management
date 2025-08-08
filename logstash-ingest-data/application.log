@@ -1911,3 +1911,6 @@ org.springframework.beans.factory.BeanDefinitionStoreException: Invalid bean def
 2025-08-04T15:51:27.668+02:00  WARN 2772 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-1] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 23502
 2025-08-04T15:51:27.669+02:00 ERROR 2772 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-1] o.h.engine.jdbc.spi.SqlExceptionHelper   : ERROR: null value in column "role_id" of relation "users" violates not-null constraint
   Detail: Failing row contains (null, aa, d5ab1608-05b9-4130-b40b-fe3b0b704df9, aaa, $2a$10$q1KgHUpkkjtvhgdI6fBC.eYZ091UYf/syO8YqbiHRqVkqtsogbXlC, miljana@gmail.com).
+2025-08-04T19:32:42.097+02:00  INFO 2772 --- [ddm-backend] [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-08-04T19:32:42.371+02:00  INFO 2772 --- [ddm-backend] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2025-08-04T19:32:42.517+02:00  INFO 2772 --- [ddm-backend] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.

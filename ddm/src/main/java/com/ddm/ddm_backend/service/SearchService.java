@@ -1,12 +1,10 @@
 package com.ddm.ddm_backend.service;
 
 import ai.djl.translate.TranslateException;
-import co.elastic.clients.elasticsearch._types.KnnQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import com.ddm.ddm_backend.indexmodel.IndexUnit;
+import com.ddm.ddm_backend.indexmodel.DummyIndex;
 import com.ddm.ddm_backend.exceptionhandling.exception.MalformedQueryException;
-import com.ddm.ddm_backend.service.SearchService;
 import com.ddm.ddm_backend.util.VectorizationUtil;
 import joptsimple.internal.Strings;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +30,7 @@ public class SearchService {
 
     private final ElasticsearchOperations elasticsearchTemplate;
 
-    public Page<IndexUnit> simpleSearch(List<String> keywords, Pageable pageable, boolean isKNN) {
+    public Page<DummyIndex> simpleSearch(List<String> keywords, Pageable pageable, boolean isKNN) {
         if (isKNN) {
             try {
                 return searchByVector(VectorizationUtil.getEmbedding(Strings.join(keywords, " ")));
@@ -50,7 +48,7 @@ public class SearchService {
         return runQuery(searchQueryBuilder.build());
     }
 
-    public Page<IndexUnit> searchByVector(float[] queryVector) {
+    public Page<DummyIndex> searchByVector(float[] queryVector) {
         Float[] floatObjects = new Float[queryVector.length];
         for (int i = 0; i < queryVector.length; i++) {
             floatObjects[i] = queryVector[i];
@@ -76,10 +74,10 @@ public class SearchService {
                 elasticsearchTemplate.search(searchQuery, IndexUnit.class),
                 searchQuery.getPageable());*/
 
-        return (Page<IndexUnit>) SearchHitSupport.unwrapSearchHits(null);
+        return (Page<DummyIndex>) SearchHitSupport.unwrapSearchHits(null);
     }
 
-    public Page<IndexUnit> advancedSearch(List<String> expression, Pageable pageable) {
+    public Page<DummyIndex> advancedSearch(List<String> expression, Pageable pageable) {
         if (expression.size() != 3) {
             throw new MalformedQueryException("Search query malformed.");
         }
@@ -182,13 +180,13 @@ public class SearchService {
         })))._toQuery();
     }
 
-    private Page<IndexUnit> runQuery(NativeQuery searchQuery) {
+    private Page<DummyIndex> runQuery(NativeQuery searchQuery) {
 
-        var searchHits = elasticsearchTemplate.search(searchQuery, IndexUnit.class,
+        var searchHits = elasticsearchTemplate.search(searchQuery, DummyIndex.class,
             IndexCoordinates.of("dummy_index"));
 
         var searchHitsPaged = SearchHitSupport.searchPageFor(searchHits, searchQuery.getPageable());
 
-        return (Page<IndexUnit>) SearchHitSupport.unwrapSearchHits(searchHitsPaged);
+        return (Page<DummyIndex>) SearchHitSupport.unwrapSearchHits(searchHitsPaged);
     }
 }

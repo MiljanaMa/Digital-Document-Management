@@ -3,8 +3,8 @@
 
 package com.ddm.ddm_backend.controller;
 
-import com.ddm.ddm_backend.dto.AuthDto;
-import com.ddm.ddm_backend.dto.RegistrationDto;
+import com.ddm.ddm_backend.dto.AuthDTO;
+import com.ddm.ddm_backend.dto.RegistrationDTO;
 import com.ddm.ddm_backend.service.AuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,12 +28,12 @@ public class AuthController {
 
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody AuthDto.LoginRequest userLogin) throws IllegalAccessException {
+    public ResponseEntity<?> login(@RequestBody AuthDTO.LoginRequest userLogin) throws IllegalAccessException {
         return authService.login(userLogin);
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegistrationDto userRegister) {
+    public ResponseEntity<?> register(@RequestBody RegistrationDTO userRegister) {
         return authService.register(userRegister);
     }
 }

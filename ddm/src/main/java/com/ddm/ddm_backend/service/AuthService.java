@@ -3,8 +3,8 @@
 
 package com.ddm.ddm_backend.service;
 
-import com.ddm.ddm_backend.dto.AuthDto;
-import com.ddm.ddm_backend.dto.RegistrationDto;
+import com.ddm.ddm_backend.dto.AuthDTO;
+import com.ddm.ddm_backend.dto.RegistrationDTO;
 import com.ddm.ddm_backend.mapper.DtoUtils;
 import com.ddm.ddm_backend.model.User;
 import com.ddm.ddm_backend.repository.RoleRepository;
@@ -64,7 +64,7 @@ public class AuthService {
         return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }
 
-    public ResponseEntity<AuthDto.Response> login(AuthDto.LoginRequest userLogin){
+    public ResponseEntity<AuthDTO.Response> login(AuthDTO.LoginRequest userLogin){
         try{
             Authentication authentication =
                     authenticationManager
@@ -78,15 +78,15 @@ public class AuthService {
             log.info("Token requested for user :{}", authentication.getAuthorities());
             String token = generateToken(authentication);
 
-            AuthDto.Response response = new AuthDto.Response("User logged in successfully", token);
-            return new ResponseEntity<AuthDto.Response>(response, HttpStatus.OK);
+            AuthDTO.Response response = new AuthDTO.Response("User logged in successfully", token);
+            return new ResponseEntity<AuthDTO.Response>(response, HttpStatus.OK);
         }catch (Exception e){
-            AuthDto.Response response = new AuthDto.Response("Login error", null);
-            return new ResponseEntity<AuthDto.Response>(response, HttpStatus.BAD_REQUEST);
+            AuthDTO.Response response = new AuthDTO.Response("Login error", null);
+            return new ResponseEntity<AuthDTO.Response>(response, HttpStatus.BAD_REQUEST);
         }
     }
 
-    public ResponseEntity<String> register(RegistrationDto registrationDto){
+    public ResponseEntity<String> register(RegistrationDTO registrationDto){
         try {
             User user = (User) new DtoUtils().convertToEntity(new User(), registrationDto);
             Optional<User> foundUser = userRepository.findByUsername(user.getUsername());

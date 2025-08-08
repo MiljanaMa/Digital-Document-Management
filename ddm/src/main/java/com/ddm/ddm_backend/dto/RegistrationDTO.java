@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class RegistrationDto implements DtoEntity {
+public class RegistrationDTO implements DtoEntity {
 
     @NotEmpty(message = "Username is required")
     private String username;

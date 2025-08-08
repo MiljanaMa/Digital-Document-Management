@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Typography, Button, Box, Container, Grid, TextField} from '@mui/material';
+import { Typography, Button, Box, Container, Grid, TextField } from '@mui/material';
 import axiosInstance from '../config/AxiosConfig';
 
 export default function Registration() {
@@ -33,7 +33,7 @@ export default function Registration() {
         setError('')
 
         try{
-            const response = await await axiosInstance.post('auth/register', formData);
+            const response = await axiosInstance.post('auth/register', formData);
 
             if(response.status === 201) {
                 navigate('/registrationSuccessful')
@@ -46,37 +46,38 @@ export default function Registration() {
         }
     }
 
-  return (
+return (
     <Container maxWidth="xs">
-      <Box sx={{ mt: 8 }}>
+      <Box sx={{
+      mt: 8,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      width: '100%',
+    }}>
         <Typography variant="h5" align="center" gutterBottom>
           Register
         </Typography>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} style={{ width: '100%' }}>
           <Grid container spacing={2}>
-            <Grid item xs={12}>
+            {/* SVA polja moraju imati xs={12} da zauzmu ceo red */}
               <TextField
                 label="First Name"
-                name="firstName"  // Match with formData's key
+                name="firstName"
                 fullWidth
                 value={formData.firstName}
                 onChange={handleChange}
                 required
               />
-            </Grid>
-            <Grid item xs={12}>
               <TextField
                 label="Last Name"
-                name="lastName"  // Match with formData's key
+                name="lastName"
                 fullWidth
                 value={formData.lastName}
                 onChange={handleChange}
                 required
               />
-            </Grid>
-
-            <Grid item xs={12}>
               <TextField
                 label="Username"
                 name="username"
@@ -85,8 +86,6 @@ export default function Registration() {
                 onChange={handleChange}
                 required
               />
-            </Grid>
-            <Grid item xs={12}>
               <TextField
                 label="Password"
                 name="password"
@@ -96,8 +95,6 @@ export default function Registration() {
                 onChange={handleChange}
                 required
               />
-            </Grid>
-            <Grid item xs={12}>
               <TextField
                 label="Confirm Password"
                 name="confirmPassword"
@@ -107,19 +104,14 @@ export default function Registration() {
                 onChange={handleChange}
                 required
               />
-            </Grid>
             {error && (
-              <Grid item xs={12}>
-                <Typography color="error" variant="body2">
+                <Typography color="error" variant="body2" align="center">
                   {error}
                 </Typography>
-              </Grid>
             )}
-            <Grid item xs={12}>
               <Button type="submit" fullWidth variant="contained" color="primary">
                 Register
               </Button>
-            </Grid>
           </Grid>
         </form>
       </Box>

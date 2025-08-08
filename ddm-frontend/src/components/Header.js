@@ -28,6 +28,9 @@ export default function Header() {
     logout();
     navigate('/login');
   };
+  const handleParseClick = () => {
+    navigate('/parseFile');
+  };
   
 
 
@@ -38,7 +41,7 @@ export default function Header() {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}> Search App </Typography>
 
           <Button color="inherit" onClick={handleHomeClick}>Home</Button>
-
+          <Button color="inherit" onClick={handleParseClick}>Parser</Button>
           {!isAuthenticated ? (
             <>
               <Button color="inherit" onClick={handleLoginClick}> Login </Button>

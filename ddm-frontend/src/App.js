@@ -3,12 +3,14 @@ import Header from './components/Header';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import Registration from './components/Registration';
 import RegistrationSuccessful from './components/RegistrationSuccessful';
+import ParseFile from './components/ParseFile';
 import Login from './components/Login';
 import Home from './components/Home';
 import { AuthProvider } from './context/AuthContext';
 import theme from './utils/Theme'
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import ProtectedRoute from './utils/ProtectedRoute';
 
 function App() {
 
@@ -28,6 +30,8 @@ function App() {
             <Route path='/login' element={<Login></Login>} />
             <Route path='/registration' element={<Registration></Registration>} />
             <Route path='/registrationSuccessful' element={<RegistrationSuccessful></RegistrationSuccessful>} />
+          
+            <Route path='/parseFile' element={<ProtectedRoute><ParseFile></ParseFile></ProtectedRoute>} /> 
           </Routes>
         </BrowserRouter>    
         </AuthProvider>   

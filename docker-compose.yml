@@ -51,29 +51,37 @@ services:
       - MINIO_ROOT_USER=ROOTUSER
       - MINIO_ROOT_PASSWORD=CHANGEME123
     command: server /data --console-address ":9090"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/ready" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     volumes:
       - minio-data:/data
     restart: always
     networks:
       - ddmdemo-network
 
-  db:
-    image: postgres:latest
-    container_name: db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: root
-      POSTGRES_DB: DDMDemoDatabase
-    volumes:
-      - ./udd-db:/var/lib/postgresql/data:rw
-    ports:
-      - "5432:5432"
+  init-minio:
+    image: minio/mc:latest
+    container_name: ddmdemo-init-minio
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        echo '[init-minio] Setting alias...';
+        mc alias set myminio http://minio:9000 ROOTUSER CHANGEME123;
+        echo '[init-minio] Creating bucket...';
+        mc mb myminio/ddm-bucket || echo '[init-minio] Bucket already exists';
+        echo '[init-minio] Done.';
+      "
     networks:
       - ddmdemo-network
+
 networks:
   ddmdemo-network:
     name: ddmdemo-network
 
 volumes:
   minio-data:
-  db:

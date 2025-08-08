@@ -10,7 +10,6 @@ import java.util.List;
 
 @FeignClient(value = "locationClient", url = "https://us1.locationiq.com/v1")
 public interface LocationIqClient {
-
     @GetMapping("/search")
     List<GeoLocationResponseDTO> forwardGeolocation(@RequestParam String key, @RequestParam String q, @RequestParam String format);
 }

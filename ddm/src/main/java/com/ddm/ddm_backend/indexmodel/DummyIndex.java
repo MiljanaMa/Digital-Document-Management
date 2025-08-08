@@ -1,6 +1,5 @@
 package com.ddm.ddm_backend.indexmodel;
 
-import com.ddm.ddm_backend.model.enums.IncidentSeverityLevel;
 import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,7 +17,7 @@ import org.springframework.data.elasticsearch.core.geo.GeoPoint;
 @AllArgsConstructor
 @Document(indexName = "dummy_index")
 @Setting(settingPath = "/configuration/serbian-analyzer-config.json")
-public class IndexUnit {
+public class DummyIndex {
 
     @Id
     private String id;
@@ -38,22 +37,20 @@ public class IndexUnit {
     @Field(type = FieldType.Dense_Vector, dims = 384, similarity = "cosine")
     private float[] vectorizedContent;
 
-    @Field(type = FieldType.Text, store = true, analyzer = "serbian_custom", searchAnalyzer = "serbian_custom")
-    private String employeeName;
+    @Field(type = FieldType.Text, store = true, name = "employeeFullName", analyzer = "serbian_custom", searchAnalyzer = "serbian_custom")
+    private String employeeFullName;
 
-    @Field(type = FieldType.Text, store = true, analyzer = "serbian_custom", searchAnalyzer = "serbian_custom")
-    private String employeeSurname;
-
-    @Field(type = FieldType.Text, store = true, analyzer = "serbian_custom", searchAnalyzer = "serbian_custom")
+    @Field(type = FieldType.Text, store = true, name = "securityOrganizationName", analyzer = "serbian_custom", searchAnalyzer = "serbian_custom")
     private String securityOrganizationName;
-    @Field(type = FieldType.Text, store = true, analyzer = "serbian_custom", searchAnalyzer = "serbian_custom")
+
+    @Field(type = FieldType.Text, store = true, name = "affectedOrganizationName", analyzer = "serbian_custom", searchAnalyzer = "serbian_custom")
     private String affectedOrganizationName;
 
-    @Field(type = FieldType.Text, store = true, analyzer = "serbian_custom", searchAnalyzer = "serbian_custom")
-    private IncidentSeverityLevel incidentSeverity;
+    @Field(type = FieldType.Text, store = true, name = "incidentSeverity", analyzer = "serbian_custom", searchAnalyzer = "serbian_custom")
+    private String incidentSeverity;
 
-    @Field(type = FieldType.Text, store = true, analyzer = "serbian_custom", searchAnalyzer = "serbian_custom")
-    private String address;
+    @Field(type = FieldType.Text, store = true, name = "affectedOrganizationAddress", analyzer = "serbian_custom", searchAnalyzer = "serbian_custom")
+    private String affectedOrganizationAddress;
 
     @Field(store = true)
     private GeoPoint location;
