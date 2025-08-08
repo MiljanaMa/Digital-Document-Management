@@ -3,6 +3,7 @@ import Header from './components/Header';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import Registration from './components/Registration';
 import RegistrationSuccessful from './components/RegistrationSuccessful';
+import Search from './components/Search';
 import ParseFile from './components/ParseFile';
 import Login from './components/Login';
 import Home from './components/Home';
@@ -32,6 +33,7 @@ function App() {
             <Route path='/registrationSuccessful' element={<RegistrationSuccessful></RegistrationSuccessful>} />
           
             <Route path='/parseFile' element={<ProtectedRoute><ParseFile></ParseFile></ProtectedRoute>} /> 
+            <Route path='/search' element={<ProtectedRoute><Search></Search></ProtectedRoute>} /> 
           </Routes>
         </BrowserRouter>    
         </AuthProvider>   
