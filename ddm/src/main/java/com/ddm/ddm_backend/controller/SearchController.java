@@ -1,6 +1,9 @@
 package com.ddm.ddm_backend.controller;
 
+import ai.djl.translate.TranslateException;
+import com.ddm.ddm_backend.dto.SearchDTO;
 import com.ddm.ddm_backend.dto.SearchQueryDTO;
+import com.ddm.ddm_backend.dto.SearchResultDTO;
 import com.ddm.ddm_backend.indexmodel.DummyIndex;
 import com.ddm.ddm_backend.service.SearchService;
 import lombok.RequiredArgsConstructor;
@@ -20,10 +23,8 @@ public class SearchController {
     private final SearchService searchService;
 
     @PostMapping("/simple")
-    public Page<DummyIndex> simpleSearch(@RequestParam Boolean isKnn,
-                                         @RequestBody SearchQueryDTO simpleSearchQuery,
-                                         Pageable pageable) {
-        return searchService.simpleSearch(simpleSearchQuery.keywords(), pageable, isKnn);
+    public Page<SearchResultDTO> simpleSearch(@RequestBody SearchDTO searchDTO, Pageable pageable) throws TranslateException {
+        return searchService.simpleSearch(searchDTO, pageable);
     }
 
     @PostMapping("/advanced")

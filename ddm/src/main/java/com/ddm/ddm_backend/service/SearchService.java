@@ -1,27 +1,37 @@
 package com.ddm.ddm_backend.service;
 
 import ai.djl.translate.TranslateException;
+import co.elastic.clients.elasticsearch._types.GeoLocation;
+import co.elastic.clients.elasticsearch._types.KnnQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.GeoDistanceQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.MatchQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import com.ddm.ddm_backend.dto.SearchDTO;
+import com.ddm.ddm_backend.dto.SearchResultDTO;
 import com.ddm.ddm_backend.indexmodel.DummyIndex;
 import com.ddm.ddm_backend.exceptionhandling.exception.MalformedQueryException;
+import com.ddm.ddm_backend.util.LocationIqClient;
 import com.ddm.ddm_backend.util.VectorizationUtil;
-import joptsimple.internal.Strings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.common.unit.Fuzziness;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHitSupport;
+import org.springframework.data.elasticsearch.core.geo.GeoPoint;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
+import org.springframework.data.elasticsearch.core.query.HighlightQuery;
+import org.springframework.data.elasticsearch.core.query.highlight.Highlight;
+import org.springframework.data.elasticsearch.core.query.highlight.HighlightField;
 import org.springframework.stereotype.Service;
-
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,39 +39,118 @@ import java.util.stream.Collectors;
 public class SearchService {
 
     private final ElasticsearchOperations elasticsearchTemplate;
+    private final LocationIqClient locationIqClient;
+    @Value("${location.api.key}")
+    private String apiKey;
+    private static final Highlight highlighter =
+            new Highlight(List.of(new HighlightField("employeeFullName"), new HighlightField("content"),
+                    new HighlightField("incidentSeverity")));
 
-    public Page<DummyIndex> simpleSearch(List<String> keywords, Pageable pageable, boolean isKNN) {
-        if (isKNN) {
-            try {
-                return searchByVector(VectorizationUtil.getEmbedding(Strings.join(keywords, " ")));
-            } catch (TranslateException e) {
-                log.error("Vectorization failed");
-                return Page.empty();
+    public Page<SearchResultDTO> simpleSearch(SearchDTO searchDTO, Pageable pageable) throws TranslateException {
+        List<Query> queries = new ArrayList<>();
+
+        if (searchDTO.getEmployeeFullName() != null && !searchDTO.getEmployeeFullName().isEmpty()) {
+            queries.add(getQuery("employeeFullName", searchDTO.getEmployeeFullName()));
+        }
+        if (searchDTO.getIncidentSeverity() != null && !searchDTO.getIncidentSeverity().isEmpty()) {
+            queries.add(getQuery("incidentSeverity", searchDTO.getIncidentSeverity()));
+        }
+        if (searchDTO.getSecurityOrganizationName() != null && !searchDTO.getSecurityOrganizationName().isEmpty()) {
+            queries.add(getQuery("organizationName", searchDTO.getSecurityOrganizationName()));
+        }
+        if (searchDTO.getAffectedOrganizationName() != null && !searchDTO.getAffectedOrganizationName().isEmpty()) {
+            queries.add(getQuery("affectedOrganizationName", searchDTO.getAffectedOrganizationName()));
+        }
+
+        var address = searchDTO.getAddress();
+        var radius = searchDTO.getRadius();
+        if (address != null && !address.isEmpty() && radius != null && !radius.isEmpty()) {
+            var location = locationIqClient.forwardGeolocation(
+                    apiKey, address, "json").get(0);
+            GeoPoint geoPoint = new GeoPoint(Double.parseDouble(location.getLat()), Double.parseDouble(location.getLon()));
+            GeoLocation geoLocation = GeoLocation.of(l -> l
+                    .latlon(latLon -> latLon
+                            .lat(geoPoint.getLat())
+                            .lon(geoPoint.getLon())));
+
+            Query query = GeoDistanceQuery.of(g -> g
+                    .field("location")
+                    .location(geoLocation)
+                    .distance(radius)
+            )._toQuery();
+
+            queries.add(query);
+        }
+
+        if (searchDTO.getText() != null && !searchDTO.getText().isEmpty()) {
+            if (searchDTO.isKnn()) {
+                float[] queryVector = VectorizationUtil.getEmbedding(searchDTO.getText());
+
+                List<Float> queryVectorList = new ArrayList<>();
+                for (float f : queryVector) {
+                    queryVectorList.add(f);
+                }
+
+                KnnQuery  knnQuery = new KnnQuery.Builder()
+                        .field("vectorizedContent")
+                        .queryVector(queryVectorList)
+                        .numCandidates(100L)
+                        .build();
+
+                NativeQuery searchQuery = NativeQuery.builder()
+                        .withQuery(q -> q.bool(b -> b.must(queries)))
+                        .withHighlightQuery(new HighlightQuery(highlighter, null))
+                        .withKnnQuery(knnQuery)
+                        .withPageable(pageable)
+                        .build();
+
+                return mapResults(searchQuery);
+            } else {
+                queries.add(getQuery("content", searchDTO.getText()));
             }
         }
 
-        System.out.println(buildSimpleSearchQuery(keywords).toString());
-        var searchQueryBuilder =
-            new NativeQueryBuilder().withQuery(buildSimpleSearchQuery(keywords))
-                .withPageable(pageable);
+        NativeQuery searchQuery = NativeQuery.builder()
+                .withQuery(q -> q.bool(b -> b.must(queries)))
+                .withHighlightQuery(new HighlightQuery(highlighter, null))
+                .withPageable(pageable)
+                .build();
 
-        return runQuery(searchQueryBuilder.build());
+        return mapResults(searchQuery);
+        }
+
+    private Page<SearchResultDTO> mapResults(NativeQuery searchQuery) {
+        var searchHits = elasticsearchTemplate.search(searchQuery, DummyIndex.class, IndexCoordinates.of("dummy_index"));
+        var searchHitsPaged = SearchHitSupport.searchPageFor(searchHits, searchQuery.getPageable());
+
+        List<SearchResultDTO> dtoList = searchHitsPaged.getContent().stream().map(hit -> {
+            DummyIndex doc = hit.getContent();
+            return new SearchResultDTO(doc, hit.getHighlightFields());
+        }).toList();
+
+        return new PageImpl<>(dtoList, searchQuery.getPageable(), searchHitsPaged.getTotalElements());
     }
-
-    public Page<DummyIndex> searchByVector(float[] queryVector) {
+    private Query getQuery(String field, String value) {
+        return MatchQuery.of(m -> m
+                .field(field)
+                .query(value)
+        )._toQuery();
+    }
+/*
+    public Page<SearchResultDTO> searchByVector(float[] queryVector) {
         Float[] floatObjects = new Float[queryVector.length];
         for (int i = 0; i < queryVector.length; i++) {
             floatObjects[i] = queryVector[i];
         }
         List<Float> floatList = Arrays.stream(floatObjects).collect(Collectors.toList());
 
-        /*var knnQuery = new KnnQuery.Builder()
-            .field("vectorizedContent")
-            .queryVector(floatList)
-            .numCandidates(100)
-            .k(10)
-            .boost(10.0f)
-            .build();
+        var knnQuery = new KnnQuery.Builder()
+                .field("vectorizedContent")
+                .queryVector(floatList)
+                .numCandidates(100)
+                .k(10)
+                .boost(10.0f)
+                .build();
 
         var searchQuery = NativeQuery.builder()
             .withKnnQuery(knnQuery)
@@ -70,12 +159,20 @@ public class SearchService {
             .build();
 
         var searchHitsPaged =
-            SearchHitSupport.searchPageFor(
-                elasticsearchTemplate.search(searchQuery, IndexUnit.class),
-                searchQuery.getPageable());*/
+                SearchHitSupport.searchPageFor(
+                        elasticsearchTemplate.search(searchQuery, DummyIndex.class),
+                        searchQuery.getPageable());
 
-        return (Page<DummyIndex>) SearchHitSupport.unwrapSearchHits(null);
-    }
+        List<SearchResultDTO> dtoList = searchHitsPaged.getContent().stream().map(hit -> {
+            DummyIndex doc = hit.getContent();
+            SearchResultDTO dto = new SearchResultDTO();
+            dto.setTitle(doc.getTitle());
+            dto.setServerFilename(doc.getServerFilename());
+            return dto;
+        }).toList();
+
+        return new PageImpl<>(dtoList, searchQuery.getPageable(), searchHitsPaged.getTotalElements());
+    }*/
 
     public Page<DummyIndex> advancedSearch(List<String> expression, Pageable pageable) {
         if (expression.size() != 3) {
@@ -90,68 +187,6 @@ public class SearchService {
 
         return runQuery(searchQueryBuilder.build());
     }
-
-    private Query buildSimpleSearchQuery(List<String> tokens) {
-        return BoolQuery.of(q -> q.must(mb -> mb.bool(b -> {
-            tokens.forEach(token -> {
-                // Term Query - simplest
-                // Matches documents with exact term in "title" field
-                b.should(sb -> sb.term(m -> m.field("title").value(token)));
-
-                // Terms Query
-                // Matches documents with any of the specified terms in "title" field
-//            var terms = new ArrayList<>(List.of("dummy1", "dummy2"));
-//            var titleTerms = new TermsQueryField.Builder()
-//                .value(terms.stream().map(FieldValue::of).toList())
-//                .build();
-//            b.should(sb -> sb.terms(m -> m.field("title").terms(titleTerms)));
-
-                // Match Query - full-text search with fuzziness
-                // Matches documents with fuzzy matching in "title" field
-                b.should(sb -> sb.match(
-                    m -> m.field("title").fuzziness(Fuzziness.ONE.asString()).query(token)));
-
-                // Match Query - full-text search in other fields
-                // Matches documents with full-text search in other fields
-                b.should(sb -> sb.match(m -> m.field("content_sr").query(token).boost(0.5f)));
-                b.should(sb -> sb.match(m -> m.field("content_en").query(token)));
-
-                // Wildcard Query - unsafe
-                // Matches documents with wildcard matching in "title" field
-//                b.should(sb -> sb.wildcard(m -> m.field("title").value("*" + token + "*")));
-
-                // Regexp Query - unsafe
-                // Matches documents with regular expression matching in "title" field
-//                b.should(sb -> sb.regexp(m -> m.field("title").value(".*" + token + ".*")));
-
-                // Boosting Query - positive gives better score, negative lowers score
-                // Matches documents with boosted relevance in "title" field
-//                b.should(sb -> sb.boosting(bq -> bq.positive(m -> m.match(ma -> ma.field("title").query(token)))
-//                                              .negative(m -> m.match(ma -> ma.field("description").query(token)))
-//                                              .negativeBoost(0.5f)));
-
-                // Match Phrase Query - useful for exact-phrase search
-                // Matches documents with exact phrase match in "title" field
-                b.should(sb -> sb.matchPhrase(m -> m.field("title").query(token)));
-
-                // Fuzzy Query - similar to Match Query with fuzziness, useful for spelling errors
-                // Matches documents with fuzzy matching in "title" field
-                b.should(sb -> sb.match(
-                    m -> m.field("title").fuzziness(Fuzziness.ONE.asString()).query(token)));
-
-                // Range query - not applicable for dummy index, searches in the range from-to
-
-                // More Like This query - finds documents similar to the provided text
-                b.should(sb -> sb.moreLikeThis(mlt -> mlt
-                    .fields("title")
-                    .like(like -> like.text(token))
-                    .minTermFreq(1)
-                    .minDocFreq(1)));
-            });
-            return b;
-        })))._toQuery();
-    }
-
     private Query buildAdvancedSearchQuery(List<String> operands, String operation) {
         return BoolQuery.of(q -> q.must(mb -> mb.bool(b -> {
             var field1 = operands.get(0).split(":")[0];

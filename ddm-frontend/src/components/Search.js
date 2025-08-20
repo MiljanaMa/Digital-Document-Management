@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import {Button, TextField, Box, Container, MenuItem} from '@mui/material';
+import {Button, TextField, MenuItem} from '@mui/material';
+import axiosInstance from '../config/AxiosConfig';
 
 function Search() {
   // Koji tip pretrage je aktivan
@@ -9,10 +10,14 @@ function Search() {
   const [filters, setFilters] = useState({
     employeeFullName: "",
     incidentSeverity: "",
-    affectedOrganizationAddress: "",
-    securityOrganizationAddress: "",
+    affectedOrganizationName: "",
+    securityOrganizationName: "",
     text: "",
     fullText: "",
+    knn: false,
+    address: "",
+    radius: "",
+
     // za geo i advanced možeš dodati posebna polja
   });
 
@@ -32,38 +37,48 @@ function Search() {
     // Pripremi payload prema tipu pretrage
     let payload = {};
 
+    // eslint-disable-next-line default-case
     switch (searchType) {
       case "basic":
-        payload = { type: "basic", ...filters };
-        break;
-      case "knn":
-        payload = { type: "knn", ...filters };
-        break;
-      case "geo":
-        // Dodaj geo-specifična polja ako ih imaš
-        payload = { type: "geo", ...filters };
+        payload = { ...filters };
+        try{
+            const response = await axiosInstance.post('search/simple', payload);
+            const data = response.data.content
+            setResults(data);
+            setLoading(false);
+        } catch(err){
+            console.log("Greska prilikom dobavljanja rezultata.")
+            setLoading(false);
+        }
         break;
       case "advanced":
-        // Dodaj polja za advanced pretragu
-        payload = { type: "advanced", ...filters };
+        payload = { ...filters };
+        try{
+            const response = await axiosInstance.post('search/advanced', payload);
+            const data = await response.json();
+            setResults(data);
+            setLoading(false);
+        } catch(err){
+            console.log("Greska prilikom dobavljanja rezultata.")
+            setLoading(false);
+        }
         break;
     }
-
+  }
+  async function download(doc) {
     try {
-      const response = await fetch("/api/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) throw new Error("Greška prilikom pretrage");
-      const data = await response.json();
-      setResults(data);
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setLoading(false);
-    }
+          const response = await axiosInstance.post(`file/${doc.serverFilename}`);
+          const objectUrl = URL.createObjectURL(response);
+          const a = document.createElement('a');
+          a.href = objectUrl;
+          a.download = doc.title;
+          a.click();
+          URL.revokeObjectURL(objectUrl);
+        } 
+        catch(err){
+          console.log("Greska prilikom dobavljanja rezultata.")
+          setLoading(false);
+        }
   }
 
   return (
@@ -86,26 +101,6 @@ function Search() {
           <input
             type="radio"
             name="searchType"
-            value="knn"
-            checked={searchType === "knn"}
-            onChange={(e) => setSearchType(e.target.value)}
-          />
-          KNN Search
-        </label>
-        <label style={{ marginLeft: 20 }}>
-          <input
-            type="radio"
-            name="searchType"
-            value="geo"
-            checked={searchType === "geo"}
-            onChange={(e) => setSearchType(e.target.value)}
-          />
-          Geolocation Search
-        </label>
-        <label style={{ marginLeft: 20 }}>
-          <input
-            type="radio"
-            name="searchType"
             value="advanced"
             checked={searchType === "advanced"}
             onChange={(e) => setSearchType(e.target.value)}
@@ -118,14 +113,13 @@ function Search() {
       <div style={{ background: "#f8faff", padding: 20, borderRadius: 6 }}>
         <div style={{ marginTop: 10, display: searchType === "basic" ? "block" : "none" }} >
             <TextField
-                      label="Employee fullname"
+                      label="Employee Full Name"
                       name="employeeFullName"
                       variant="filled"
                       sx={{ mb: 3 }}
                       style={{ marginRight: 10, width: 300 }}
                       value={filters.employeeName}
                       onChange={handleFilterChange}
-                      required
                     />
             <TextField
                       label="Incident severity"
@@ -135,7 +129,6 @@ function Search() {
                       style={{ marginRight: 10, width: 300  }}
                       value={filters.incidentSeverity}
                       onChange={handleFilterChange}
-                      required
                     >
                 <MenuItem value="niska">niska</MenuItem>
                 <MenuItem value="srednja">srednja</MenuItem>
@@ -151,7 +144,6 @@ function Search() {
                       style={{ marginRight: 10, width: 300  }}
                       value={filters.affectedOrganizationName}
                       onChange={handleFilterChange}
-                      required
                     />
           <TextField
                       label="Security organization"
@@ -161,37 +153,8 @@ function Search() {
                       style={{ marginRight: 10, width: 300  }}
                       value={filters.securityOrganizationName}
                       onChange={handleFilterChange}
-                      required
                     />
-        <TextField
-                      label="Text"
-                      name="text"
-                      variant="filled"
-                      sx={{ mb: 3 }}
-                      fullWidth
-                      style={{ marginRight: 10}}
-                      value={filters.text}
-                      onChange={handleFilterChange}
-                      required
-                    />
-
-   
-      </div>
-      <div style={{ marginTop: 10, display: searchType === "knn" ? "block" : "none" }} >
-            <TextField
-                      label="Full-Text"
-                      name="fullText"
-                      variant="filled"
-                      sx={{ mb: 3 }}
-                      fullWidth
-                      style={{ marginRight: 10}}
-                      value={filters.fullText}
-                      onChange={handleFilterChange}
-                      required
-                    />
-      </div>
-      <div style={{ marginTop: 10, display: searchType === "geo" ? "block" : "none" }} >
-            <TextField
+          <TextField
                       label="Address"
                       name="address"
                       variant="filled"
@@ -199,20 +162,53 @@ function Search() {
                       style={{ marginRight: 10, width: 300  }}
                       value={filters.adress}
                       onChange={handleFilterChange}
-                      required
                     />
             <TextField
                       type="number"
-                      label="Radius"
+                      label="Radius (km)"
                       name="radius"
                       variant="filled"
                       sx={{ mb: 3 }}
                       style={{ marginRight: 10, width: 300  }}
                       value={filters.radius}
                       onChange={handleFilterChange}
-                      required
                     />
-                    
+          <div style={{ margin: '10px 0', alignItems: 'center' }}>
+            <label style={{ marginLeft: 10, fontWeight: 'bold' }}>
+              <input
+                type="checkbox"
+                name="knn"
+                checked={filters.knn}
+                onChange={handleFilterChange}
+                style={{ marginRight: 5 }}
+              />
+              KNN
+            </label>
+          </div>
+        <TextField
+                      label="Text"
+                      name="text"
+                      variant="filled"
+                      sx={{ mb: 3 }}
+                      fullWidth
+                      style={{ marginRight: 10, width: 1230}}
+                      value={filters.text}
+                      onChange={handleFilterChange}
+                    />
+
+   
+      </div>
+      <div style={{ marginTop: 10, display: searchType === "advanced" ? "block" : "none" }} >
+            <TextField
+                      label="Boolean"
+                      name="fullText"
+                      variant="filled"
+                      sx={{ mb: 3 }}
+                      fullWidth
+                      style={{ marginRight: 10}}
+                      value={filters.fullText}
+                      onChange={handleFilterChange}
+                    />
       </div>
 
       <Button variant="contained" color="primary"
@@ -246,7 +242,7 @@ function Search() {
             </p>
             <p>{r.summary}</p>
             <Button variant="contained" color="primary"
-              onClick={() => window.open(r.downloadUrl, "_blank")}
+              onClick={download()}
               style={{ float: "right" }}
             >
               DOWNLOAD

@@ -53,22 +53,13 @@ public class IndexingService {
 
     @Transactional
     public ParsedDocDTO addDocumentFile(MultipartFile documentFile) {
-        var newEntity = new DummyTable();
         var newIndex = new DummyIndex();
 
         var title = Objects.requireNonNull(documentFile.getOriginalFilename()).split("\\.")[0];
         newIndex.setTitle(title);
-        newEntity.setTitle(title);
-        System.out.println(title);
 
         var documentContent = extractDocumentContent(documentFile);
         newIndex.setContent(documentContent);
-        newEntity.setContent(documentContent);
-
-        if (detectLanguage(documentContent).equals("SR")) {
-            newIndex.setContent(documentContent);
-            System.out.println("Serbian detected");
-        }
 
         Map<String, String> fields = parseFields(documentContent);
 
@@ -125,15 +116,13 @@ public class IndexingService {
         );
 
         newEntity.setTitle(index.getTitle());
-        var serverFilename = dto.getDocumentId()+".pdf";
-        newEntity.setServerFilename(serverFilename);
-        index.setServerFilename(serverFilename);
-
+        newEntity.setServerFilename(index.getServerFilename());
         newEntity.setMimeType(detectMimeType(documentFile));
+        newEntity.setContent(index.getContent());
         var savedEntity = dummyRepository.save(newEntity);
 
         try {
-            index.setVectorizedContent(VectorizationUtil.getEmbedding(extractDocumentContent(documentFile)));
+            index.setVectorizedContent(VectorizationUtil.getEmbedding(index.getContent()));
         } catch (TranslateException e) {
             log.error("Could not calculate vector representation for document with ID: {}",
                     savedEntity.getId());
@@ -152,7 +141,7 @@ public class IndexingService {
 
         dummyIndexRepository.save(index);
         log.info("STATISTIC-LOG Indexed file {} with employee_name:{} affected_organization:{} address:{}", index.getTitle(), index.getEmployeeFullName(), index.getAffectedOrganizationName(), index.getAffectedOrganizationAddress());
-        return serverFilename;
+        return index.getServerFilename();
     }
 
     private String extractDocumentContent(MultipartFile multipartPdfFile) {
