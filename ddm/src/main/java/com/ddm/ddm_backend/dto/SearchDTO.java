@@ -1,5 +1,6 @@
 package com.ddm.ddm_backend.dto;
 
+import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,4 +20,6 @@ public class SearchDTO {
     private boolean knn;
     private String address;
     private String radius;
+    @NotEmpty(message = "Unit is required")
+    private String unit;
 }

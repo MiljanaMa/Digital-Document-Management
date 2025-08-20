@@ -72,11 +72,11 @@ public class SearchService {
                     .latlon(latLon -> latLon
                             .lat(geoPoint.getLat())
                             .lon(geoPoint.getLon())));
-
+            String distance = radius + searchDTO.getUnit();
             Query query = GeoDistanceQuery.of(g -> g
                     .field("location")
                     .location(geoLocation)
-                    .distance(radius)
+                    .distance(distance)
             )._toQuery();
 
             queries.add(query);

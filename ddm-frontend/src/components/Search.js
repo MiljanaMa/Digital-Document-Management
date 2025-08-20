@@ -17,6 +17,7 @@ function Search() {
     knn: false,
     address: "",
     radius: "",
+    unit: "km",
 
     // za geo i advanced možeš dodati posebna polja
   });
@@ -173,6 +174,20 @@ function Search() {
                       value={filters.radius}
                       onChange={handleFilterChange}
                     />
+            <TextField
+                      select
+                      label="Unit"
+                      name="unit"
+                      variant="filled"
+                      fullWidth
+                      sx={{ mb: 3 }}
+                      value={filters.unit}
+                      onChange={handleFilterChange}
+                      required
+                    >
+                      <MenuItem value="m">Meter</MenuItem>
+                      <MenuItem value="km">Kilometer</MenuItem>
+                    </TextField>        
           <div style={{ margin: '10px 0', alignItems: 'center' }}>
             <label style={{ marginLeft: 10, fontWeight: 'bold' }}>
               <input
@@ -236,13 +251,12 @@ function Search() {
             <small>{r.type}</small>
             <p>
               <b>Employee:</b> {r.employeeFullName} <br />
-              <b>Security organization:</b> {r.securityOrganizationName} <br />
-              <b>Affected organization:</b> {r.affectedOrganizationName} <br />
-              <b>Affected organization address:</b> {r.affectedOrganizationAddress}
+              <b>Security organization:</b> {r.index.securityOrganizationName} <br />
+              <b>Affected organization:</b> {r.index.affectedOrganizationName} <br />
+              <b>Affected organization address:</b> {r.index.affectedOrganizationAddress}
             </p>
-            <p>{r.summary}</p>
             <Button variant="contained" color="primary"
-              onClick={download()}
+              onClick={() => download(r.index)}
               style={{ float: "right" }}
             >
               DOWNLOAD
