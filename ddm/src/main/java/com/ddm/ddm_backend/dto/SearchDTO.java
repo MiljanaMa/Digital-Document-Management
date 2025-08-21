@@ -15,7 +15,6 @@ public class SearchDTO {
     private String incidentSeverity;
     private String affectedOrganizationName;
     private String securityOrganizationName;
-    private String fullText;
     private String text;
     private boolean knn;
     private String address;

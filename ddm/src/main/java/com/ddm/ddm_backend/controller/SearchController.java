@@ -9,11 +9,15 @@ import com.ddm.ddm_backend.service.SearchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/search")
@@ -28,8 +32,12 @@ public class SearchController {
     }
 
     @PostMapping("/advanced")
-    public Page<DummyIndex> advancedSearch(@RequestBody SearchQueryDTO advancedSearchQuery,
+    public Page<SearchResultDTO> advancedSearch(@RequestBody SearchQueryDTO advancedSearchQuery,
                                            Pageable pageable) {
-        return searchService.advancedSearch(advancedSearchQuery.keywords(), pageable);
+        try {
+            return searchService.advancedSearch(advancedSearchQuery, pageable);
+        } catch (IOException e) {
+            return Page.empty(pageable);
+        }
     }
 }

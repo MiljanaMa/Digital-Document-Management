@@ -3,26 +3,25 @@ import {Button, TextField, MenuItem} from '@mui/material';
 import axiosInstance from '../config/AxiosConfig';
 
 function Search() {
-  // Koji tip pretrage je aktivan
-  const [searchType, setSearchType] = useState("basic"); // basic, knn, geo, advanced
 
-  // Zajednički filteri za sve pretrage
+  const [searchType, setSearchType] = useState("basic");
+
   const [filters, setFilters] = useState({
     employeeFullName: "",
     incidentSeverity: "",
     affectedOrganizationName: "",
     securityOrganizationName: "",
     text: "",
-    fullText: "",
     knn: false,
     address: "",
     radius: "",
     unit: "km",
-
-    // za geo i advanced možeš dodati posebna polja
   });
+  const booleanQueryOPERANDS = ['AND', 'OR', 'NOT']
+  const booleanQueryFields = ['employeeFullName:', 'affectedOrganizationName:', 'securityOrganizationName:', 'incidentSeverity: niska', 'incidentSeverity: srednja', 'incidentSeverity: visoka', 'incidentSeverity: kriticna', 'content:' ]
 
   const [results, setResults] = useState([]);
+  const [searchDTO, setSearchDTO] = useState("");
   const [loading, setLoading] = useState(false);
 
   function handleFilterChange(e) {
@@ -35,7 +34,6 @@ function Search() {
 
   async function handleSearch() {
     setLoading(true);
-    // Pripremi payload prema tipu pretrage
     let payload = {};
 
     // eslint-disable-next-line default-case
@@ -53,10 +51,12 @@ function Search() {
         }
         break;
       case "advanced":
-        payload = { ...filters };
+        payload = {
+          keywords: parseBoolExpression(searchDTO)
+        };
         try{
             const response = await axiosInstance.post('search/advanced', payload);
-            const data = await response.json();
+            const data = response.data.content
             setResults(data);
             setLoading(false);
         } catch(err){
@@ -66,20 +66,74 @@ function Search() {
         break;
     }
   }
+  const parseBoolExpression = (input) => {
+    const tokens = [];
+    const parts = input.trim().split(/\s+/);
+
+    const OPERATORS = new Set(["AND", "OR", "NOT"]);
+
+    let i = 0;
+    while (i < parts.length) {
+      const part = parts[i];
+
+      if (OPERATORS.has(part.toUpperCase())) {
+        tokens.push(part.toUpperCase());
+        i++;
+      } else if (part.includes(":")) {
+        const [field, firstValuePart] = part.split(":", 2);
+        let valueParts = [firstValuePart];
+
+        i++;
+        while (
+          i < parts.length &&
+          !OPERATORS.has(parts[i].toUpperCase()) &&
+          !parts[i].includes(":")
+        ) {
+          valueParts.push(parts[i]);
+          i++;
+        }
+
+        const fullValue = valueParts.join(" ");
+
+        const hasQuotes = fullValue.startsWith('"') && fullValue.endsWith('"');
+
+        if (hasQuotes) {
+          tokens.push(`${field}:${fullValue}`);
+        } else {
+          tokens.push(`${field}:${fullValue}`);
+        }
+      } else {
+        tokens.push(part);
+        i++;
+      }
+    }
+    console.log("=== Parsed tokens ===");
+    tokens.forEach((t, idx) => {
+      console.log(`${idx + 1}. ${t}`);
+    });
+
+    return tokens;
+  };
   async function download(doc) {
     try {
-          const response = await axiosInstance.post(`file/${doc.serverFilename}`);
-          const objectUrl = URL.createObjectURL(response);
-          const a = document.createElement('a');
-          a.href = objectUrl;
-          a.download = doc.title;
-          a.click();
-          URL.revokeObjectURL(objectUrl);
-        } 
-        catch(err){
-          console.log("Greska prilikom dobavljanja rezultata.")
-          setLoading(false);
-        }
+        const response = await axiosInstance.get(`file/${doc.serverFilename}`, {
+          responseType: 'blob'
+        });
+
+        const objectUrl = URL.createObjectURL(response.data);
+        const a = document.createElement('a');
+        a.href = objectUrl;
+        a.download = doc.title || doc.serverFilename;
+
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(objectUrl);
+    } 
+    catch(err){
+        console.log("Greska prilikom dobavljanja rezultata.")
+        setLoading(false);
+    }
   }
 
   return (
@@ -119,7 +173,7 @@ function Search() {
                       variant="filled"
                       sx={{ mb: 3 }}
                       style={{ marginRight: 10, width: 300 }}
-                      value={filters.employeeName}
+                      value={filters.employeeFullName}
                       onChange={handleFilterChange}
                     />
             <TextField
@@ -166,7 +220,7 @@ function Search() {
                     />
             <TextField
                       type="number"
-                      label="Radius (km)"
+                      label="Radius"
                       name="radius"
                       variant="filled"
                       sx={{ mb: 3 }}
@@ -181,6 +235,7 @@ function Search() {
                       variant="filled"
                       fullWidth
                       sx={{ mb: 3 }}
+                      style={{ marginRight: 10, width: 130  }}
                       value={filters.unit}
                       onChange={handleFilterChange}
                       required
@@ -188,42 +243,78 @@ function Search() {
                       <MenuItem value="m">Meter</MenuItem>
                       <MenuItem value="km">Kilometer</MenuItem>
                     </TextField>        
-          <div style={{ margin: '10px 0', alignItems: 'center' }}>
-            <label style={{ marginLeft: 10, fontWeight: 'bold' }}>
-              <input
-                type="checkbox"
-                name="knn"
-                checked={filters.knn}
-                onChange={handleFilterChange}
-                style={{ marginRight: 5 }}
-              />
-              KNN
-            </label>
-          </div>
-        <TextField
-                      label="Text"
-                      name="text"
-                      variant="filled"
-                      sx={{ mb: 3 }}
-                      fullWidth
-                      style={{ marginRight: 10, width: 1230}}
-                      value={filters.text}
-                      onChange={handleFilterChange}
-                    />
+            <div style={{ margin: '10px 0', alignItems: 'center' }}>
+              <label style={{ marginLeft: 10, fontWeight: 'bold' }}>
+                <input
+                  type="checkbox"
+                  name="knn"
+                  checked={filters.knn}
+                  onChange={handleFilterChange}
+                  style={{ marginRight: 5 }}
+                />
+                KNN
+              </label>
+            </div>
+            <TextField
+                          label="Text"
+                          name="text"
+                          variant="filled"
+                          sx={{ mb: 3 }}
+                          fullWidth
+                          style={{ marginRight: 10, width: 1230}}
+                          value={filters.text}
+                          onChange={handleFilterChange}
+                        />
 
    
       </div>
       <div style={{ marginTop: 10, display: searchType === "advanced" ? "block" : "none" }} >
             <TextField
-                      label="Boolean"
                       name="fullText"
                       variant="filled"
                       sx={{ mb: 3 }}
                       fullWidth
                       style={{ marginRight: 10}}
-                      value={filters.fullText}
-                      onChange={handleFilterChange}
+                      value={searchDTO}
+                      onChange={(e) => setSearchDTO(e.target.value)}
                     />
+        {/* Dugmići za boolean operatore */}
+        <div className='mt-2 flex gap-2 flex-wrap'>
+          {booleanQueryOPERANDS.map((operand, index) => (
+            <Button
+              variant='outlined'
+              size='small'
+              key={index}
+              onClick={() => {
+                let newSearchDTO = searchDTO;
+                newSearchDTO += ` ${operand} `;
+                setSearchDTO(newSearchDTO);
+              }}
+            >
+              {operand}
+            </Button>
+          ))}
+        </div>
+
+        {/* Dugmići za polja (fields) */}
+        <div className='mt-2 flex gap-2 flex-wrap'>
+          {booleanQueryFields.map((field, index) => (
+            <Button
+              variant='outlined'
+              color='secondary'
+              sx={{ textTransform: "none" }}
+              size='small'
+              key={index}
+              onClick={() => {
+                let newSearchDTO = searchDTO;
+                newSearchDTO += ` ${field}`;
+                setSearchDTO(newSearchDTO);
+              }}
+            >
+              {field}
+            </Button>
+          ))}
+        </div>
       </div>
 
       <Button variant="contained" color="primary"
@@ -245,22 +336,72 @@ function Search() {
               border: "1px solid #ddd",
               borderRadius: 5,
               background: "white",
+              display: "flex",
+              flexDirection: "column",
             }}
           >
-            <h3 style={{ color: "#3366cc", cursor: "pointer" }}>{r.title}</h3>
-            <small>{r.type}</small>
-            <p>
-              <b>Employee:</b> {r.employeeFullName} <br />
-              <b>Security organization:</b> {r.index.securityOrganizationName} <br />
-              <b>Affected organization:</b> {r.index.affectedOrganizationName} <br />
-              <b>Affected organization address:</b> {r.index.affectedOrganizationAddress}
-            </p>
-            <Button variant="contained" color="primary"
-              onClick={() => download(r.index)}
-              style={{ float: "right" }}
+            <h3 style={{ color: "#3366cc", cursor: "pointer" }}>{r.index.title}</h3>
+            <table
+              style={{
+                borderCollapse: "collapse",
+                width: "auto",
+                margin: "1rem auto",
+                fontSize: "1rem",
+                textAlign: "left"
+              }}
             >
-              DOWNLOAD
-            </Button>
+              <tbody>
+                {[
+                  { label: "Employee:", value: r.index.employeeFullName, field: "employeeFullName" },
+                  { label: "Security organization:", value: r.index.securityOrganizationName, field: "securityOrganizationName" },
+                  { label: "Affected organization:", value: r.index.affectedOrganizationName, field: "affectedOrganizationName" },
+                  { label: "Affected organization address:", value: r.index.affectedOrganizationAddress, field: "affectedOrganizationAddress" },
+                  { label: "Content:", value: r.index.content, field: "content" } // content uvek prikazan
+                ].map((item, idx) => {
+                  const hasHighlight = r.highlights && r.highlights[item.field];
+                  const cellStyle = { padding: "4px 8px", border: "1px solid #ddd" };
+
+                  return (
+                    <tr key={idx}>
+                      <td style={{ fontWeight: "bold", padding: "4px 8px", border: "1px solid #ddd", width: "180px" }}>
+                        {item.label}
+                      </td>
+                      <td style={cellStyle}>
+                        {item.field === "content" && hasHighlight
+                          ? r.highlights[item.field].map((snippet, j) => (
+                              <span
+                                key={j}
+                                dangerouslySetInnerHTML={{
+                                  __html: snippet.replace(/<em>/g, '<strong style="background-color: yellow">').replace(/<\/em>/g, '</strong>')
+                                }}
+                              />
+                            ))
+                          : hasHighlight
+                          ? r.highlights[item.field].map((snippet, j) => (
+                              <span
+                                key={j}
+                                dangerouslySetInnerHTML={{
+                                  __html: snippet.replace(/<em>/g, '<strong style="background-color: yellow">').replace(/<\/em>/g, '</strong>')
+                                }}
+                              />
+                            ))
+                          : item.value}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "1rem" }}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => download(r.index)}
+              >
+                DOWNLOAD
+              </Button>
+            </div>
           </div>
         ))}
       </div>

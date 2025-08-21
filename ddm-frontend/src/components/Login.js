@@ -24,7 +24,7 @@ export default function Login() {
           const response = await axiosInstance.post('auth/login', loginData);
           if (response.status === 200 && response.data.token) {
               login(response.data.token);
-              navigate('/offers');
+              navigate('');
           } else {
               setError('Login failed. Please try again!');
           }
