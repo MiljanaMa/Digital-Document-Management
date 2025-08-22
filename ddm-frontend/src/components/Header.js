@@ -34,7 +34,9 @@ export default function Header() {
   const handleSearchClick = () => {
     navigate('/search');
   };
-  
+  const handleDashboardClick = () => {
+    navigate('/dashboard');
+  };
 
 
   return (
@@ -46,6 +48,7 @@ export default function Header() {
           <Button color="inherit" onClick={handleHomeClick}>Home</Button>
           <Button color="inherit" onClick={handleParseClick}>Parser</Button>
           <Button color="inherit" onClick={handleSearchClick}>Search</Button>
+          <Button color="inherit" onClick={handleDashboardClick}>Dashboard</Button>
           {!isAuthenticated ? (
             <>
               <Button color="inherit" onClick={handleLoginClick}> Login </Button>

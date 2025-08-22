@@ -7,6 +7,7 @@ import Search from './components/Search';
 import ParseFile from './components/ParseFile';
 import Login from './components/Login';
 import Home from './components/Home';
+import Dashboard from './components/Dashboard';
 import { AuthProvider } from './context/AuthContext';
 import theme from './utils/Theme'
 import { ThemeProvider } from '@mui/material/styles';
@@ -34,6 +35,7 @@ function App() {
           
             <Route path='/parseFile' element={<ProtectedRoute><ParseFile></ParseFile></ProtectedRoute>} /> 
             <Route path='/search' element={<ProtectedRoute><Search></Search></ProtectedRoute>} /> 
+            <Route path='/dashboard' element={<ProtectedRoute><Dashboard></Dashboard></ProtectedRoute>} />
           </Routes>
         </BrowserRouter>    
         </AuthProvider>   

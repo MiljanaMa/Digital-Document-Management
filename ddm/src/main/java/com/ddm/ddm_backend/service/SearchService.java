@@ -48,9 +48,9 @@ public class SearchService {
     @Autowired
     private AdvancedQueryUtil advancedQueryUtil;
     private static final Highlight highlighter =
-            new Highlight(List.of(new HighlightField("content"), new HighlightField("incidentSeverity"),
+            new Highlight(List.of(new HighlightField("content")/*, new HighlightField("incidentSeverity"),
                     new HighlightField("employeeFullName"), new HighlightField("affectedOrganizationName"),
-                    new HighlightField("securityOrganizationName")));
+                    new HighlightField("securityOrganizationName")*/));
 
     public Page<SearchResultDTO> simpleSearch(SearchDTO searchDTO, Pageable pageable) throws TranslateException {
         List<Query> queries = new ArrayList<>();

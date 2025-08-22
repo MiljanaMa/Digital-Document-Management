@@ -1,0 +1,61 @@
+2025-08-22T00:42:18.020+02:00  INFO 18916 --- [ddm-backend] [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-08-22T00:42:20.943+02:00  INFO 18916 --- [ddm-backend] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2025-08-22T00:42:21.591+02:00  INFO 18916 --- [ddm-backend] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2025-08-22T10:44:06.731+02:00  INFO 13940 --- [ddm-backend] [main] c.ddm.ddm_backend.DdmBackendApplication  : Starting DdmBackendApplication using Java 20.0.1 with PID 13940 (C:\Users\Miljana\Documents\UDD\Digital-Document-Management\ddm\target\classes started by Miljana in C:\Users\Miljana\Documents\UDD\Digital-Document-Management\ddm)
+2025-08-22T10:44:06.737+02:00  INFO 13940 --- [ddm-backend] [main] c.ddm.ddm_backend.DdmBackendApplication  : No active profile set, falling back to 1 default profile: "default"
+2025-08-22T10:44:10.851+02:00  INFO 13940 --- [ddm-backend] [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2025-08-22T10:44:10.853+02:00  INFO 13940 --- [ddm-backend] [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
+2025-08-22T10:44:10.954+02:00  INFO 13940 --- [ddm-backend] [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 90 ms. Found 1 Elasticsearch repository interface.
+2025-08-22T10:44:11.624+02:00  INFO 13940 --- [ddm-backend] [main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2025-08-22T10:44:11.628+02:00  INFO 13940 --- [ddm-backend] [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-08-22T10:44:11.692+02:00  INFO 13940 --- [ddm-backend] [main] .RepositoryConfigurationExtensionSupport : Spring Data JPA - Could not safely identify store assignment for repository candidate interface com.ddm.ddm_backend.indexrepository.DummyIndexRepository; If you want this repository to be a JPA repository, consider annotating your entities with one of these annotations: jakarta.persistence.Entity, jakarta.persistence.MappedSuperclass (preferred), or consider extending one of the following types with your repository: org.springframework.data.jpa.repository.JpaRepository
+2025-08-22T10:44:11.722+02:00  INFO 13940 --- [ddm-backend] [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 85 ms. Found 3 JPA repository interfaces.
+2025-08-22T10:44:12.424+02:00  INFO 13940 --- [ddm-backend] [main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=f4bdf8c3-a6a3-3288-bf76-b21f1d419fc7
+2025-08-22T10:44:13.770+02:00  INFO 13940 --- [ddm-backend] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8088 (http)
+2025-08-22T10:44:13.804+02:00  INFO 13940 --- [ddm-backend] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-08-22T10:44:13.804+02:00  INFO 13940 --- [ddm-backend] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.31]
+2025-08-22T10:44:13.973+02:00  INFO 13940 --- [ddm-backend] [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-08-22T10:44:13.974+02:00  INFO 13940 --- [ddm-backend] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 7078 ms
+2025-08-22T10:44:14.483+02:00  INFO 13940 --- [ddm-backend] [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-08-22T10:44:14.707+02:00  INFO 13940 --- [ddm-backend] [main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.3.Final
+2025-08-22T10:44:14.837+02:00  INFO 13940 --- [ddm-backend] [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2025-08-22T10:44:15.904+02:00  INFO 13940 --- [ddm-backend] [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-08-22T10:44:15.968+02:00  INFO 13940 --- [ddm-backend] [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-08-22T10:44:16.864+02:00  INFO 13940 --- [ddm-backend] [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@2dde0a34
+2025-08-22T10:44:16.866+02:00  INFO 13940 --- [ddm-backend] [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2025-08-22T10:44:17.031+02:00  WARN 13940 --- [ddm-backend] [main] org.hibernate.orm.deprecation            : HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2025-08-22T10:44:19.419+02:00  INFO 13940 --- [ddm-backend] [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-08-22T10:44:21.086+02:00  INFO 13940 --- [ddm-backend] [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-08-22T10:44:31.955+02:00  INFO 13940 --- [ddm-backend] [main] ai.djl.pytorch.engine.PtEngine           : PyTorch graph executor optimizer is enabled, this may impact your inference latency and throughput. See: https://docs.djl.ai/docs/development/inference_performance_optimization.html#graph-executor-optimization
+2025-08-22T10:44:31.982+02:00  INFO 13940 --- [ddm-backend] [main] ai.djl.pytorch.engine.PtEngine           : Number of inter-op threads is 8
+2025-08-22T10:44:31.982+02:00  INFO 13940 --- [ddm-backend] [main] ai.djl.pytorch.engine.PtEngine           : Number of intra-op threads is 4
+2025-08-22T10:44:32.660+02:00  INFO 13940 --- [ddm-backend] [main] ai.djl.util.Platform                     : Found matching platform from: jar:file:/C:/Users/Miljana/.m2/repository/ai/djl/huggingface/tokenizers/0.28.0/tokenizers-0.28.0.jar!/native/lib/tokenizers.properties
+2025-08-22T10:44:34.369+02:00  INFO 13940 --- [ddm-backend] [main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name jpaUserDetailsService
+2025-08-22T10:44:37.171+02:00  INFO 13940 --- [ddm-backend] [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
+2025-08-22T10:44:37.313+02:00  INFO 13940 --- [ddm-backend] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8088 (http) with context path '/'
+2025-08-22T10:44:38.677+02:00  INFO 13940 --- [ddm-backend] [main] o.s.cloud.commons.util.InetUtils         : Cannot determine local hostname
+2025-08-22T10:44:38.698+02:00  INFO 13940 --- [ddm-backend] [main] c.ddm.ddm_backend.DdmBackendApplication  : Started DdmBackendApplication in 34.257 seconds (process running for 57.616)
+2025-08-22T10:45:16.458+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-08-22T10:45:16.458+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-08-22T10:45:16.463+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
+2025-08-22T10:45:28.705+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-5] c.ddm.ddm_backend.service.AuthService    : User role: ROLE_USER
+2025-08-22T10:45:28.706+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-5] c.ddm.ddm_backend.service.AuthService    : Token requested for user :[ROLE_USER]
+2025-08-22T10:45:33.594+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-8] c.ddm.ddm_backend.service.AuthService    : User role: ROLE_USER
+2025-08-22T10:45:33.594+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-8] c.ddm.ddm_backend.service.AuthService    : Token requested for user :[ROLE_USER]
+2025-08-22T10:45:44.011+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-1] c.ddm.ddm_backend.service.AuthService    : User role: ROLE_USER
+2025-08-22T10:45:44.011+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-1] c.ddm.ddm_backend.service.AuthService    : Token requested for user :[ROLE_USER]
+2025-08-22T10:46:16.004+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-6] org.nd4j.linalg.factory.Nd4jBackend      : Loaded [CpuBackend] backend
+2025-08-22T10:46:21.500+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-6] org.nd4j.nativeblas.NativeOpsHolder      : Number of threads used for linear algebra: 4
+2025-08-22T10:46:21.504+02:00  WARN 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-6] o.n.l.cpu.nativecpu.CpuNDArrayFactory    : *********************************** CPU Feature Check Warning ***********************************
+2025-08-22T10:46:21.505+02:00  WARN 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-6] o.n.l.cpu.nativecpu.CpuNDArrayFactory    : Warning: Initializing ND4J with Generic x86 binary on a CPU with AVX512 support
+2025-08-22T10:46:21.505+02:00  WARN 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-6] o.n.l.cpu.nativecpu.CpuNDArrayFactory    : Using ND4J with AVX512 will improve performance. See deeplearning4j.org/cpu for more details
+2025-08-22T10:46:21.505+02:00  WARN 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-6] o.n.l.cpu.nativecpu.CpuNDArrayFactory    : Or set environment variable ND4J_IGNORE_AVX=true to suppress this warning
+2025-08-22T10:46:21.506+02:00  WARN 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-6] o.n.l.cpu.nativecpu.CpuNDArrayFactory    : *************************************************************************************************
+2025-08-22T10:46:21.859+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-6] org.nd4j.nativeblas.Nd4jBlas             : Number of threads used for OpenMP BLAS: 4
+2025-08-22T10:46:21.906+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-6] o.n.l.a.o.e.DefaultOpExecutioner         : Backend used: [CPU]; OS: [Windows 10]
+2025-08-22T10:46:21.906+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-6] o.n.l.a.o.e.DefaultOpExecutioner         : Cores: [8]; Memory: [1.9GB];
+2025-08-22T10:46:21.906+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-6] o.n.l.a.o.e.DefaultOpExecutioner         : Blas vendor: [OPENBLAS]
+2025-08-22T10:46:24.485+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-6] c.d.ddm_backend.service.IndexingService  : STATISTIC-LOG Indexed file Untitled document (1) with employee_name:Jelena Petrović affected_organization:Banka Delta address:Žarka Zrenjanina 15, Novi Sad
+2025-08-22T10:46:35.299+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-1] c.d.ddm_backend.service.IndexingService  : STATISTIC-LOG Indexed file Untitled document (2) with employee_name:Ivan Kovačević affected_organization:Fakultet Tehničkih Nauka Niš address:Univerzitetski trg 2, Niš
+2025-08-22T10:54:36.035+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-6] c.d.ddm_backend.service.IndexingService  : STATISTIC-LOG Indexed file Untitled document (9) with employee_name:Ivana Stojanović affected_organization:Ministarstvo finansija address:Nemanjina 22-26, Beograd
+2025-08-22T10:54:43.626+02:00  INFO 13940 --- [ddm-backend] [http-nio-0.0.0.0-8088-exec-1] c.d.ddm_backend.service.IndexingService  : STATISTIC-LOG Indexed file Untitled document (11) with employee_name:Milica Ristić affected_organization:Fakultet Elektrotehnike i Računarstva address:Kralja Petra 12, Niš
