@@ -16,6 +16,7 @@ function Search() {
     address: "",
     radius: "",
     unit: "km",
+    basic: "",
   });
   const booleanQueryOPERANDS = ['AND', 'OR', 'NOT']
   const booleanQueryFields = ['employeeFullName:', 'affectedOrganizationName:', 'securityOrganizationName:', 'incidentSeverity: niska', 'incidentSeverity: srednja', 'incidentSeverity: visoka', 'incidentSeverity: kriticna', 'content:' ]
@@ -39,6 +40,23 @@ function Search() {
     // eslint-disable-next-line default-case
     switch (searchType) {
       case "basic":
+        const tokenizedKeywords = tokenizeInput(filters.basic);
+        const payload1 = { keywords: tokenizedKeywords };
+
+        try {
+            const response = await axiosInstance.post(
+                `search/simple1?isKnn=${filters.knn}`,
+                payload1
+            );
+            const data = response.data.content;
+            setResults(data);
+            setLoading(false);
+        } catch(err) {
+            console.log("Greska prilikom dobavljanja rezultata.", err);
+            setLoading(false);
+        }
+        break;
+      case "geo":
         payload = { ...filters };
         try{
             const response = await axiosInstance.post('search/simple', payload);
@@ -66,6 +84,21 @@ function Search() {
         break;
     }
   }
+  function tokenizeInput(text) {
+  const regex = /"([^"]+)"|(\S+)/g;
+  const tokens = [];
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match[1]) {
+      tokens.push(match[1]);
+    } else if (match[2]) {
+      tokens.push(match[2]);
+    }
+  }
+
+  return tokens;
+}
   const parseBoolExpression = (input) => {
     const tokens = [];
     const parts = input.trim().split(/\s+/);
@@ -153,6 +186,16 @@ function Search() {
           Basic Search
         </label>
         <label style={{ marginLeft: 20 }}>
+        <input
+            type="radio"
+            name="searchType"
+            value="geo"
+            checked={searchType === "geo"}
+            onChange={(e) => setSearchType(e.target.value)}
+          />
+          Geo Search
+        </label>
+        <label style={{ marginLeft: 20 }}>
           <input
             type="radio"
             name="searchType"
@@ -171,7 +214,7 @@ function Search() {
                       label="Employee Full Name"
                       name="employeeFullName"
                       variant="filled"
-                      sx={{ mb: 3 }}
+                      sx={{ mb: 3, display: 'none' }}
                       style={{ marginRight: 10, width: 300 }}
                       value={filters.employeeFullName}
                       onChange={handleFilterChange}
@@ -180,7 +223,7 @@ function Search() {
                       label="Incident severity"
                       name="incidentSeverity"
                       variant="filled"
-                      sx={{ mb: 3 }}
+                      sx={{ mb: 3, display: 'none' }}
                       style={{ marginRight: 10, width: 300  }}
                       value={filters.incidentSeverity}
                       onChange={handleFilterChange}
@@ -195,7 +238,7 @@ function Search() {
                       label="Affected organization"
                       name="affectedOrganizationName"
                       variant="filled"
-                      sx={{ mb: 3 }}
+                      sx={{ mb: 3, display: 'none' }}
                       style={{ marginRight: 10, width: 300  }}
                       value={filters.affectedOrganizationName}
                       onChange={handleFilterChange}
@@ -204,12 +247,38 @@ function Search() {
                       label="Security organization"
                       name="securityOrganizationName"
                       variant="filled"
-                      sx={{ mb: 3 }}
+                      sx={{ mb: 3, display: 'none' }}
                       style={{ marginRight: 10, width: 300  }}
                       value={filters.securityOrganizationName}
                       onChange={handleFilterChange}
-                    />
-          <TextField
+                    />       
+            <div style={{ margin: '10px 0', alignItems: 'center' }}>
+              <label style={{ marginLeft: 10, fontWeight: 'bold' }}>
+                <input
+                  type="checkbox"
+                  name="knn"
+                  checked={filters.knn}
+                  onChange={handleFilterChange}
+                  style={{ marginRight: 5 }}
+                />
+                KNN
+              </label>
+            </div>
+            <TextField
+                          label="Text"
+                          name="basic"
+                          variant="filled"
+                          sx={{ mb: 3 }}
+                          fullWidth
+                          style={{ marginRight: 10, width: 1230}}
+                          value={filters.basic}
+                          onChange={handleFilterChange}
+                        />
+
+   
+      </div>
+      <div style={{ marginTop: 10, display: searchType === "geo" ? "block" : "none" }} >
+      <TextField
                       label="Address"
                       name="address"
                       variant="filled"
@@ -242,31 +311,7 @@ function Search() {
                     >
                       <MenuItem value="m">Meter</MenuItem>
                       <MenuItem value="km">Kilometer</MenuItem>
-                    </TextField>        
-            <div style={{ margin: '10px 0', alignItems: 'center' }}>
-              <label style={{ marginLeft: 10, fontWeight: 'bold' }}>
-                <input
-                  type="checkbox"
-                  name="knn"
-                  checked={filters.knn}
-                  onChange={handleFilterChange}
-                  style={{ marginRight: 5 }}
-                />
-                KNN
-              </label>
-            </div>
-            <TextField
-                          label="Text"
-                          name="text"
-                          variant="filled"
-                          sx={{ mb: 3 }}
-                          fullWidth
-                          style={{ marginRight: 10, width: 1230}}
-                          value={filters.text}
-                          onChange={handleFilterChange}
-                        />
-
-   
+                    </TextField>
       </div>
       <div style={{ marginTop: 10, display: searchType === "advanced" ? "block" : "none" }} >
             <TextField

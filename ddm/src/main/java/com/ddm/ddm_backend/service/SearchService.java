@@ -12,6 +12,7 @@ import com.ddm.ddm_backend.exceptionhandling.exception.MalformedQueryException;
 import com.ddm.ddm_backend.util.AdvancedQueryUtil;
 import com.ddm.ddm_backend.util.LocationIqClient;
 import com.ddm.ddm_backend.util.VectorizationUtil;
+import joptsimple.internal.Strings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.common.unit.Fuzziness;
@@ -34,7 +35,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -48,9 +51,9 @@ public class SearchService {
     @Autowired
     private AdvancedQueryUtil advancedQueryUtil;
     private static final Highlight highlighter =
-            new Highlight(List.of(new HighlightField("content")/*, new HighlightField("incidentSeverity"),
+            new Highlight(List.of(new HighlightField("content"), new HighlightField("incidentSeverity"),
                     new HighlightField("employeeFullName"), new HighlightField("affectedOrganizationName"),
-                    new HighlightField("securityOrganizationName")*/));
+                    new HighlightField("securityOrganizationName")));
 
     public Page<SearchResultDTO> simpleSearch(SearchDTO searchDTO, Pageable pageable) throws TranslateException {
         List<Query> queries = new ArrayList<>();
@@ -93,6 +96,26 @@ public class SearchService {
 
         return mapResults(searchQuery);
         }
+    public Page<SearchResultDTO> simpleSearch(List<String> keywords, Pageable pageable, boolean isKNN) {
+        if (isKNN) {
+            try {
+                return searchByVector(VectorizationUtil.getEmbedding(Strings.join(keywords, " ")));
+            } catch (TranslateException e) {
+                log.error("Vectorization failed");
+                return Page.empty();
+            }
+        }
+
+//        System.out.println(buildSimpleSearchQuery(keywords).toString());
+        var searchQueryBuilder =
+                new NativeQueryBuilder().withQuery(buildSimpleSearchQuery(keywords))
+                        .withPageable(pageable)
+                        .withHighlightQuery(new HighlightQuery(highlighter, null))
+                        .build();
+
+        //return runQuery(searchQueryBuilder.build());
+        return mapResults(searchQueryBuilder);
+    }
 
     @NotNull
     private static NativeQuery getKnnQuery(SearchDTO searchDTO, Pageable pageable, List<Query> queries) throws TranslateException {
@@ -158,7 +181,6 @@ public class SearchService {
                 ? MatchPhraseQuery.of(m -> m.field(field).query(finalValue))._toQuery()
                 : MatchQuery.of(m -> m.field(field).query(finalValue))._toQuery();
     }
-/*
     public Page<SearchResultDTO> searchByVector(float[] queryVector) {
         Float[] floatObjects = new Float[queryVector.length];
         for (int i = 0; i < queryVector.length; i++) {
@@ -169,32 +191,23 @@ public class SearchService {
         var knnQuery = new KnnQuery.Builder()
                 .field("vectorizedContent")
                 .queryVector(floatList)
-                .numCandidates(100)
-                .k(10)
+                .numCandidates(100L)
                 .boost(10.0f)
                 .build();
 
         var searchQuery = NativeQuery.builder()
-            .withKnnQuery(knnQuery)
-            .withMaxResults(5)
-            .withSearchType(null)
-            .build();
-
-        var searchHitsPaged =
+                .withKnnQuery(knnQuery)
+                .withMaxResults(5)
+                .withSearchType(null)
+                .build();
+        return mapResults(searchQuery);
+        /*var searchHitsPaged =
                 SearchHitSupport.searchPageFor(
                         elasticsearchTemplate.search(searchQuery, DummyIndex.class),
                         searchQuery.getPageable());
 
-        List<SearchResultDTO> dtoList = searchHitsPaged.getContent().stream().map(hit -> {
-            DummyIndex doc = hit.getContent();
-            SearchResultDTO dto = new SearchResultDTO();
-            dto.setTitle(doc.getTitle());
-            dto.setServerFilename(doc.getServerFilename());
-            return dto;
-        }).toList();
-
-        return new PageImpl<>(dtoList, searchQuery.getPageable(), searchHitsPaged.getTotalElements());
-    }*/
+        return (Page<DummyIndex>) SearchHitSupport.unwrapSearchHits(searchHitsPaged);*/
+    }
     public Page<SearchResultDTO> advancedSearch(SearchQueryDTO searchQueryDTO, Pageable pageable) throws IOException {
         List<String> postfix = advancedQueryUtil.toPostfix(searchQueryDTO.keywords());
         Query query = advancedQueryUtil.buildQuery(postfix);
@@ -207,48 +220,33 @@ public class SearchService {
 
         return mapResults(searchQuery);
     }
-
-    public Page<DummyIndex> advancedSearch(List<String> expression, Pageable pageable) {
-        if (expression.size() != 3) {
-            throw new MalformedQueryException("Search query malformed.");
-        }
-
-        String operation = expression.get(1);
-        expression.remove(1);
-        var searchQueryBuilder =
-            new NativeQueryBuilder().withQuery(buildAdvancedSearchQuery(expression, operation))
-                .withPageable(pageable);
-
-        return runQuery(searchQueryBuilder.build());
-    }
-    private Query buildAdvancedSearchQuery(List<String> operands, String operation) {
+    private Query buildSimpleSearchQuery(List<String> tokens) {
         return BoolQuery.of(q -> q.must(mb -> mb.bool(b -> {
-            var field1 = operands.get(0).split(":")[0];
-            var value1 = operands.get(0).split(":")[1];
-            var field2 = operands.get(1).split(":")[0];
-            var value2 = operands.get(1).split(":")[1];
+            tokens.forEach(token -> {
+                boolean isPhrase = token.startsWith("\"") && token.endsWith("\"");
+                String finalValue = isPhrase
+                        ? token.substring(1, token.length() - 1)
+                        : token;
+                if (isPhrase) {
+                    b.should(sb -> sb.matchPhrase(m -> m.field("content").query(finalValue)));
 
-            switch (operation) {
-                case "AND":
-                    b.must(sb -> sb.match(
-                        m -> m.field(field1).fuzziness(Fuzziness.ONE.asString()).query(value1)));
-                    b.must(sb -> sb.match(m -> m.field(field2).query(value2)));
-                    break;
-                case "OR":
-                    b.should(sb -> sb.match(
-                        m -> m.field(field1).fuzziness(Fuzziness.ONE.asString()).query(value1)));
-                    b.should(sb -> sb.match(m -> m.field(field2).query(value2)));
-                    break;
-                case "NOT":
-                    b.must(sb -> sb.match(
-                        m -> m.field(field1).fuzziness(Fuzziness.ONE.asString()).query(value1)));
-                    b.mustNot(sb -> sb.match(m -> m.field(field2).query(value2)));
-                    break;
-            }
+                    b.should(sb -> sb.matchPhrase(m -> m.field("affectedOrganizationName").query(finalValue)));
+                    b.should(sb -> sb.matchPhrase(m -> m.field("securityOrganizationName").query(finalValue)));
+                    b.should(sb -> sb.matchPhrase(m -> m.field("employeeFullName").query(finalValue)));
+                    // severity (može ostati term, jer je obično LOW/MEDIUM/HIGH)
+                    b.should(sb -> sb.term(m -> m.field("incidentSeverity").value(finalValue)));
+
+                } else {
+                    b.should(sb -> sb.match(m -> m.field("content").query(finalValue).boost(0.5f)));
+                    b.should(sb -> sb.match(m -> m.field("affectedOrganizationName").query(finalValue)));
+                    b.should(sb -> sb.match(m -> m.field("securityOrganizationName").query(finalValue)));
+                    b.should(sb -> sb.match(m -> m.field("employeeFullName").query(finalValue)));
+                    b.should(sb -> sb.term(m -> m.field("incidentSeverity").value(finalValue)));
+                }
+            });
             return b;
         })))._toQuery();
     }
-
     private Page<DummyIndex> runQuery(NativeQuery searchQuery) {
 
         var searchHits = elasticsearchTemplate.search(searchQuery, DummyIndex.class,

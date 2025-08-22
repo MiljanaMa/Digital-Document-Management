@@ -30,6 +30,12 @@ public class SearchController {
     public Page<SearchResultDTO> simpleSearch(@RequestBody SearchDTO searchDTO, Pageable pageable) throws TranslateException {
         return searchService.simpleSearch(searchDTO, pageable);
     }
+    @PostMapping("/simple1")
+    public Page<SearchResultDTO> simpleSearch(@RequestParam Boolean isKnn,
+                                         @RequestBody SearchQueryDTO simpleSearchQuery,
+                                         Pageable pageable) {
+        return searchService.simpleSearch(simpleSearchQuery.keywords(), pageable, isKnn);
+    }
 
     @PostMapping("/advanced")
     public Page<SearchResultDTO> advancedSearch(@RequestBody SearchQueryDTO advancedSearchQuery,
