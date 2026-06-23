@@ -1,0 +1,81 @@
+name: Build and push images
+
+# Builds the backend, frontend and auth-service images and pushes them to
+# Docker Hub (miljanama/*). Each image is tagged with the version read from that
+# service's own manifest, so the published tag always follows the source version:
+#   ddm-backend      -> <project><version> in ddm/pom.xml
+#   ddm-frontend     -> "version" in ddm-frontend/package.json
+#   ddm-auth-service -> services/auth-service/VERSION
+#
+# The Helm charts (MiljanaMa/GitOps) pin image.tag to these same versions, so a
+# new build is consumed only once the chart is bumped to match.
+#
+# Requires two repo secrets:
+#   DOCKERHUB_USERNAME  -> miljanama
+#   DOCKERHUB_TOKEN     -> a Docker Hub access token (Read & Write)
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+    # Only rebuild when something that affects an image actually changes.
+    paths:
+      - "ddm/**"
+      - "ddm-frontend/**"
+      - "services/auth-service/**"
+      - ".github/workflows/build-images.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ddm-backend
+            context: ddm
+            file: ddm/Dockerfile
+            build-args: ""
+          - name: ddm-frontend
+            context: ddm-frontend
+            file: ddm-frontend/Dockerfile
+            build-args: |
+              REACT_APP_API_BASE_URL=/api/
+          - name: ddm-auth-service
+            context: services/auth-service
+            file: services/auth-service/Dockerfile
+            build-args: ""
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version from source manifest
+        id: ver
+        run: |
+          case "${{ matrix.name }}" in
+            ddm-backend)
+              VERSION=$(python3 -c 'import xml.etree.ElementTree as ET; ns={"m":"http://maven.apache.org/POM/4.0.0"}; print(ET.parse("ddm/pom.xml").getroot().find("m:version", ns).text.strip())') ;;
+            ddm-frontend)
+              VERSION=$(jq -r .version ddm-frontend/package.json) ;;
+            ddm-auth-service)
+              VERSION=$(tr -d '[:space:]' < services/auth-service/VERSION) ;;
+          esac
+          if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
+            echo "::error::Could not resolve version for ${{ matrix.name }}"; exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved ${{ matrix.name }} version: $VERSION"
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          push: true
+          tags: miljanama/${{ matrix.name }}:${{ steps.ver.outputs.version }}
+          build-args: ${{ matrix.build-args }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
