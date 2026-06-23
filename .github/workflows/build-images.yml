@@ -66,6 +66,9 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Resolved ${{ matrix.name }} version: $VERSION"
 
+      - name: Set up QEMU            # emulation for cross-arch (arm64) builds
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -81,6 +84,8 @@ jobs:
           context: ${{ matrix.context }}
           file: ${{ matrix.file }}
           push: true
+          # Multi-arch so the images run on amd64 (CI/cloud) AND arm64 (Apple-silicon minikube).
+          platforms: linux/amd64,linux/arm64
           tags: miljanama/${{ matrix.name }}:${{ steps.ver.outputs.version }}
           build-args: ${{ matrix.build-args }}
           cache-from: type=gha
