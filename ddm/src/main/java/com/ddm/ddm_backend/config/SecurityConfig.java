@@ -78,6 +78,8 @@ public class SecurityConfig {
                 })
                 .authorizeHttpRequests(auth -> {auth
                             .requestMatchers("/api/auth/**").permitAll()
+                            // Actuator health/metrics must be reachable by k8s probes and Prometheus.
+                            .requestMatchers("/actuator/**").permitAll()
                             .requestMatchers("/api/products/**").hasAuthority("ROLE_ADMIN")
                             .anyRequest().authenticated();
                 })
