@@ -99,21 +99,17 @@ public class SearchService {
     public Page<SearchResultDTO> simpleSearch(List<String> keywords, Pageable pageable, boolean isKNN) {
         if (isKNN) {
             try {
-                return searchByVector(VectorizationUtil.getEmbedding(Strings.join(keywords, " ")));
+                return searchByVector(VectorizationUtil.getEmbedding(Strings.join(keywords, " ")), keywords);
             } catch (TranslateException e) {
                 log.error("Vectorization failed");
                 return Page.empty();
             }
         }
-
-//        System.out.println(buildSimpleSearchQuery(keywords).toString());
         var searchQueryBuilder =
                 new NativeQueryBuilder().withQuery(buildSimpleSearchQuery(keywords))
                         .withPageable(pageable)
                         .withHighlightQuery(new HighlightQuery(highlighter, null))
                         .build();
-
-        //return runQuery(searchQueryBuilder.build());
         return mapResults(searchQueryBuilder);
     }
 
@@ -139,8 +135,6 @@ public class SearchService {
                 .withKnnQuery(knnQuery)
                 .withPageable(pageable)
                 .build();
-        //.withMaxResults(5)
-        //.withSearchType(null)
         return searchQuery;
     }
 
@@ -181,7 +175,7 @@ public class SearchService {
                 ? MatchPhraseQuery.of(m -> m.field(field).query(finalValue))._toQuery()
                 : MatchQuery.of(m -> m.field(field).query(finalValue))._toQuery();
     }
-    public Page<SearchResultDTO> searchByVector(float[] queryVector) {
+    public Page<SearchResultDTO> searchByVector(float[] queryVector, List<String> keywords) {
         Float[] floatObjects = new Float[queryVector.length];
         for (int i = 0; i < queryVector.length; i++) {
             floatObjects[i] = queryVector[i];
@@ -194,19 +188,25 @@ public class SearchService {
                 .numCandidates(100L)
                 .boost(10.0f)
                 .build();
+        String searchText = String.join(" ", keywords);
+
+        Query textQuery = MatchQuery.of(mq -> mq
+                .field("content")
+                .query(searchText)
+        )._toQuery();
+
+        Query combinedQuery = BoolQuery.of(b -> b
+                .must(knnQuery._toQuery())
+                .should(textQuery)
+        )._toQuery();
 
         var searchQuery = NativeQuery.builder()
-                .withKnnQuery(knnQuery)
+                .withQuery(combinedQuery)
                 .withMaxResults(5)
                 .withSearchType(null)
+                .withHighlightQuery(new HighlightQuery(highlighter, null))
                 .build();
         return mapResults(searchQuery);
-        /*var searchHitsPaged =
-                SearchHitSupport.searchPageFor(
-                        elasticsearchTemplate.search(searchQuery, DummyIndex.class),
-                        searchQuery.getPageable());
-
-        return (Page<DummyIndex>) SearchHitSupport.unwrapSearchHits(searchHitsPaged);*/
     }
     public Page<SearchResultDTO> advancedSearch(SearchQueryDTO searchQueryDTO, Pageable pageable) throws IOException {
         List<String> postfix = advancedQueryUtil.toPostfix(searchQueryDTO.keywords());
@@ -233,7 +233,6 @@ public class SearchService {
                     b.should(sb -> sb.matchPhrase(m -> m.field("affectedOrganizationName").query(finalValue)));
                     b.should(sb -> sb.matchPhrase(m -> m.field("securityOrganizationName").query(finalValue)));
                     b.should(sb -> sb.matchPhrase(m -> m.field("employeeFullName").query(finalValue)));
-                    // severity (može ostati term, jer je obično LOW/MEDIUM/HIGH)
                     b.should(sb -> sb.term(m -> m.field("incidentSeverity").value(finalValue)));
 
                 } else {
@@ -246,14 +245,5 @@ public class SearchService {
             });
             return b;
         })))._toQuery();
-    }
-    private Page<DummyIndex> runQuery(NativeQuery searchQuery) {
-
-        var searchHits = elasticsearchTemplate.search(searchQuery, DummyIndex.class,
-            IndexCoordinates.of("dummy_index"));
-
-        var searchHitsPaged = SearchHitSupport.searchPageFor(searchHits, searchQuery.getPageable());
-
-        return (Page<DummyIndex>) SearchHitSupport.unwrapSearchHits(searchHitsPaged);
     }
 }
