@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Typography, Button, Box, Container, TextField } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import axiosInstance from '../config/AxiosConfig';
+import authAxiosInstance from '../config/AuthAxiosConfig';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
@@ -21,7 +21,7 @@ export default function Login() {
       };
 
       try {
-          const response = await axiosInstance.post('auth/login', loginData);
+          const response = await authAxiosInstance.post('login', loginData);
           if (response.status === 200 && response.data.token) {
               login(response.data.token);
               navigate('/');

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Typography, Button, Box, Container, Grid, TextField } from '@mui/material';
-import axiosInstance from '../config/AxiosConfig';
+import authAxiosInstance from '../config/AuthAxiosConfig';
 
 export default function Registration() {
 
@@ -29,20 +29,20 @@ export default function Registration() {
 
         if(formData.password !== formData.confirmPassword){
             setError("Passwords do not match")
+            return;
         }
         setError('')
 
         try{
-            const response = await axiosInstance.post('auth/register', formData);
+            const response = await authAxiosInstance.post('register', formData);
 
             if(response.status === 201) {
                 navigate('/registrationSuccessful')
             } else {
-                const errorText = await response.text();
-                setError(errorText)
+                setError('Registration failed')
             }
         } catch(err){
-            setError('An error occured durin registration')
+            setError(err.response?.data || 'An error occurred during registration')
         }
     }
 

@@ -14,6 +14,8 @@ COPY . .
 # backend through the same-origin Ingress (host/api -> ddm-backend).
 ARG REACT_APP_API_BASE_URL=/api/
 ENV REACT_APP_API_BASE_URL=$REACT_APP_API_BASE_URL
+ARG REACT_APP_AUTH_BASE_URL=/api/auth/
+ENV REACT_APP_AUTH_BASE_URL=$REACT_APP_AUTH_BASE_URL
 # CRA treats lint warnings as errors when CI=true; disable for container builds.
 ENV CI=false
 RUN npm run build

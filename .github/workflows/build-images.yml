@@ -1,50 +1,78 @@
 name: Build and push images
 
-# Builds the backend, frontend and auth-service images and pushes them to
-# Docker Hub (miljanama/*). Each image is tagged with the version read from that
-# service's own manifest, so the published tag always follows the source version:
-#   ddm-backend      -> <project><version> in ddm/pom.xml
-#   ddm-frontend     -> "version" in ddm-frontend/package.json
-#   ddm-auth-service -> services/auth-service/VERSION
-#
-# The Helm charts (MiljanaMa/GitOps) pin image.tag to these same versions, so a
-# new build is consumed only once the chart is bumped to match.
-#
-# Requires two repo secrets:
-#   DOCKERHUB_USERNAME  -> miljanama
-#   DOCKERHUB_TOKEN     -> a Docker Hub access token (Read & Write)
 on:
   push:
     branches: [main]
     tags: ["v*"]
-    # Only rebuild when something that affects an image actually changes.
     paths:
       - "ddm/**"
       - "ddm-frontend/**"
-      - "services/auth-service/**"
+      - "ddm-auth/**"
       - ".github/workflows/build-images.yml"
   workflow_dispatch:
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      has_changes: ${{ steps.set-matrix.outputs.has_changes }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed image contexts
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'ddm/**'
+            frontend:
+              - 'ddm-frontend/**'
+            auth:
+              - 'ddm-auth/**'
+
+      - name: Build dynamic matrix
+        id: set-matrix
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            MATRIX='[{"name":"ddm-backend","context":"ddm","file":"ddm/Dockerfile","build_args":""},{"name":"ddm-frontend","context":"ddm-frontend","file":"ddm-frontend/Dockerfile","build_args":"REACT_APP_API_BASE_URL=/api/\nREACT_APP_AUTH_BASE_URL=/api/auth/"},{"name":"ddm-auth","context":"ddm-auth","file":"ddm-auth/Dockerfile","build_args":""}]'
+          else
+            MATRIX='[]'
+
+            if [ "${{ steps.filter.outputs.backend }}" = "true" ]; then
+              MATRIX=$(jq -c '. + [{"name":"ddm-backend","context":"ddm","file":"ddm/Dockerfile","build_args":""}]' <<<"$MATRIX")
+            fi
+
+            if [ "${{ steps.filter.outputs.frontend }}" = "true" ]; then
+              MATRIX=$(jq -c '. + [{"name":"ddm-frontend","context":"ddm-frontend","file":"ddm-frontend/Dockerfile","build_args":"REACT_APP_API_BASE_URL=/api/\nREACT_APP_AUTH_BASE_URL=/api/auth/"}]' <<<"$MATRIX")
+            fi
+
+            if [ "${{ steps.filter.outputs.auth }}" = "true" ]; then
+              MATRIX=$(jq -c '. + [{"name":"ddm-auth","context":"ddm-auth","file":"ddm-auth/Dockerfile","build_args":""}]' <<<"$MATRIX")
+            fi
+          fi
+
+          if [ "$MATRIX" = "[]" ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          echo "Resolved matrix: $MATRIX"
+
   build:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_changes == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: ddm-backend
-            context: ddm
-            file: ddm/Dockerfile
-            build-args: ""
-          - name: ddm-frontend
-            context: ddm-frontend
-            file: ddm-frontend/Dockerfile
-            build-args: |
-              REACT_APP_API_BASE_URL=/api/
-          - name: ddm-auth-service
-            context: services/auth-service
-            file: services/auth-service/Dockerfile
-            build-args: ""
+        include: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,8 +85,8 @@ jobs:
               VERSION=$(python3 -c 'import xml.etree.ElementTree as ET; ns={"m":"http://maven.apache.org/POM/4.0.0"}; print(ET.parse("ddm/pom.xml").getroot().find("m:version", ns).text.strip())') ;;
             ddm-frontend)
               VERSION=$(jq -r .version ddm-frontend/package.json) ;;
-            ddm-auth-service)
-              VERSION=$(tr -d '[:space:]' < services/auth-service/VERSION) ;;
+            ddm-auth)
+              VERSION=$(tr -d '[:space:]' < ddm-auth/VERSION) ;;
           esac
           if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
             echo "::error::Could not resolve version for ${{ matrix.name }}"; exit 1
@@ -87,6 +115,6 @@ jobs:
           # Multi-arch so the images run on amd64 (CI/cloud) AND arm64 (Apple-silicon minikube).
           platforms: linux/amd64,linux/arm64
           tags: miljanama/${{ matrix.name }}:${{ steps.ver.outputs.version }}
-          build-args: ${{ matrix.build-args }}
+          build-args: ${{ matrix.build_args }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

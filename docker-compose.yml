@@ -1,5 +1,25 @@
 version: "3.7"
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ddmdemo-postgres
+    environment:
+      - POSTGRES_DB=DDMDemoDatabase
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d DDMDemoDatabase" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - ddmdemo-network
+    restart: always
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.15.2
     container_name: ddmdemo-elasticsearch
@@ -48,8 +68,8 @@ services:
       - 9000:9000
       - 9090:9090
     environment:
-      - MINIO_ROOT_USER=ROOTUSER
-      - MINIO_ROOT_PASSWORD=CHANGEME123
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:?set MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
     command: server /data --console-address ":9090"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/ready" ]
@@ -71,7 +91,7 @@ services:
     entrypoint: >
       /bin/sh -c "
         echo '[init-minio] Setting alias...';
-        mc alias set myminio http://minio:9000 ROOTUSER CHANGEME123;
+        mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER:?set MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD};
         echo '[init-minio] Creating bucket...';
         mc mb myminio/ddm-bucket || echo '[init-minio] Bucket already exists';
         echo '[init-minio] Done.';
@@ -79,9 +99,105 @@ services:
     networks:
       - ddmdemo-network
 
+  ddm-auth:
+    build:
+      context: ./ddm-auth
+    container_name: ddmdemo-auth
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=DDMDemoDatabase
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      - JWT_PRIVATE_KEY_PATH=/run/secrets/jwt/private-key.pem
+      - JWT_PUBLIC_KEY_PATH=/run/secrets/jwt/public-key.pem
+      - JWT_ALGORITHM=RS256
+      - JWT_TTL_SECONDS=36000
+      - CORS_ORIGINS=http://localhost:3000,http://localhost,http://ddm.local,http://ddm.local:8081
+      - PORT=8090
+    ports:
+      - "8090:8090"
+    volumes:
+      - ${JWT_KEYS_DIR:?set JWT_KEYS_DIR}:/run/secrets/jwt:ro
+    networks:
+      - ddmdemo-network
+    restart: always
+
+  ddm-backend:
+    build:
+      context: ./ddm
+    container_name: ddmdemo-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_started
+      init-minio:
+        condition: service_completed_successfully
+    environment:
+      - API_PORT=8088
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      - ES_HOST=elasticsearch
+      - ES_PORT=9200
+      - MINIO_HOST=minio
+      - MINIO_BUCKET=ddm-bucket
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:?set MINIO_ROOT_USER}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
+      - LOGGING_FILE_NAME=/tmp/application.log
+      - CORS_ALLOWED_ORIGIN_PATTERNS=http://localhost:3000,http://localhost,http://ddm.local,http://ddm.local:*
+      - RSA_PUBLIC_KEY=file:/run/secrets/jwt/public-key.pem
+      - LOCATION_API_KEY=${LOCATION_API_KEY:?set LOCATION_API_KEY}
+    ports:
+      - "8088:8088"
+    volumes:
+      - ${JWT_KEYS_DIR:?set JWT_KEYS_DIR}:/run/secrets/jwt:ro
+    networks:
+      - ddmdemo-network
+    restart: always
+
+  ddm-frontend:
+    build:
+      context: ./ddm-frontend
+      args:
+        REACT_APP_API_BASE_URL: /api/
+        REACT_APP_AUTH_BASE_URL: /api/auth/
+    container_name: ddmdemo-frontend
+    depends_on:
+      - ddm-backend
+      - ddm-auth
+    ports:
+      - "3000:80"
+    networks:
+      - ddmdemo-network
+    restart: always
+
+  api-gateway:
+    image: nginx:1.27-alpine
+    container_name: ddmdemo-api-gateway
+    depends_on:
+      - ddm-frontend
+      - ddm-backend
+      - ddm-auth
+    ports:
+      - "80:80"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - ddmdemo-network
+    restart: always
+
 networks:
   ddmdemo-network:
     name: ddmdemo-network
 
 volumes:
   minio-data:
+  postgres-data:
