@@ -9,7 +9,7 @@ export default function RegistrationSuccessful() {
         You have successfully Registered. You can now Login
       </Typography>
       <Typography variant="h6" align="center" gutterBottom>
-        <a href="/login">You can now Login</a>
+        <a href="/login">You can now Login!</a>
       </Typography>
     </Box>
     </Container>
