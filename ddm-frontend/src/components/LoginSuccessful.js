@@ -9,7 +9,7 @@ export default function LoginSuccessful() {
         You have successfully Logged in.
       </Typography>
       <Typography variant="h6" align="center" gutterBottom>
-        <a href="/search">Go to search page</a>
+        <a href="/search">Go to search page!</a>
       </Typography>
     </Box>
     </Container>
