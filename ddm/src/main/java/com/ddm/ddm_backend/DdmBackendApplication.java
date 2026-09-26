@@ -11,7 +11,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @SpringBootApplication
 public class DdmBackendApplication {
 
-	// no-op change: CI/CD loop timing measurement for master's thesis verification (§5.4)
+	// no-op change: Argo CD Image Updater digest-detection demo (master's thesis, §4.5)
 	public static void main(String[] args) {
 		SpringApplication.run(DdmBackendApplication.class, args);
 	}
