@@ -129,7 +129,7 @@ async def lifespan(_: FastAPI):
     yield
 
 
-# no-op change: Argo CD Image Updater digest-detection demo (master's thesis, §4.5)
+# no-op change: Argo CD Image Updater digest-detection demo, take 2 (master's thesis, §4.5)
 app = FastAPI(title="DDM Auth Service", version="1.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
